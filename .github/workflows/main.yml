@@ -1,0 +1,116 @@
+name: Smart RDP (Lokendra Edition)
+
+on:
+  workflow_dispatch:
+    inputs:
+      crd_code:
+        description: 'Paste ANY Code (Linux/Windows)'
+        required: true
+
+jobs:
+  # ==================================================
+  # 🐧 LINUX JOB (Agar Code me DISPLAY= hai)
+  # ==================================================
+  linux-smart:
+    if: contains(github.event.inputs.crd_code, 'DISPLAY=')
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    
+    steps:
+      - name: 🧹 Auto-Cleanup (Space for Dolphin & Docker)
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+          sudo apt-get remove -y firefox google-chrome-stable microsoft-edge-stable || true
+          sudo apt-get autoremove -y
+          sudo apt-get clean
+
+      - name: ⚙️ Setup Environment (IST Time & Apps)
+        run: |
+          # 1. Timezone (India)
+          sudo timedatectl set-timezone Asia/Kolkata
+          
+          # 2. Install Essentials & Audio
+          sudo apt-get update
+          sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils file-roller unzip curl wget
+          sudo apt-get install -y pulseaudio pavucontrol pulseaudio-utils xfce4-pulseaudio-plugin
+
+          # 3. Install Sublime Text
+          wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --dearmor --output /usr/share/keyrings/sublimehq-archive.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/sublimehq-archive.gpg] https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+          sudo apt-get update
+          sudo apt-get install -y sublime-text
+
+          # 4. Install Dolphin{anty}
+          mkdir -p ~/Desktop
+          wget -O ~/Desktop/Dolphin-anty.AppImage https://dolphin-anty.com/api/v1/download/linux/latest
+          chmod +x ~/Desktop/Dolphin-anty.AppImage
+          sudo apt-get install -y libfuse2
+
+      - name: 🐳 Setup Docker (Ready Mode)
+        run: |
+          if ! command -v docker &> /dev/null; then curl -fsSL https://get.docker.com | sh; fi
+          sudo usermod -aG docker $USER
+          sudo systemctl restart docker
+          newgrp docker || true
+
+      - name: 🎧 Audio Fix (PulseAudio)
+        run: |
+          sudo usermod -a -G audio,pulse,pulse-access $USER
+          # Fake Speaker Create
+          pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description="Virtual_Dummy_Output"
+          
+          # CRD Install & Session
+          wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
+          sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
+          
+          echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
+          echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
+          
+          # Disable Lock Screen
+          sudo apt-get install -y gnome-screensaver
+          gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
+
+      - name: 🚀 Start Linux RDP (Lokendra)
+        env:
+          RAW_CODE: ${{ github.event.inputs.crd_code }}
+        run: eval "$RAW_CODE --pin=14789147 --name=LOKENDRA"
+
+      - name: 💤 Keep Alive
+        run: while true; do sleep 300; done
+
+  # ==================================================
+  # 🪟 WINDOWS JOB (Agar Code me DISPLAY= nahi hai)
+  # ==================================================
+  windows-smart:
+    if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: ⚙️ Setup Environment (Time & Audio)
+        run: |
+          Set-TimeZone -Id "India Standard Time"
+          net start Audiosrv
+          # Attempting VB-Cable for Audio (Might need manual check)
+          choco install vb-cable -y --no-progress --ignore-checksums --force
+
+      - name: 📦 Install Apps (Dolphin & Sublime)
+        run: |
+          choco install sublimetext3 -y --no-progress
+          $DesktopPath = [Environment]::GetFolderPath("Desktop")
+          Invoke-WebRequest -Uri "https://dolphin-anty.com/api/v1/download/win/latest" -OutFile "$DesktopPath\DolphinInstaller.exe"
+
+      - name: 🐳 Configure Docker
+        run: Start-Service docker -ErrorAction SilentlyContinue
+
+      - name: 🚀 Start Windows RDP (Lokendra)
+        shell: powershell
+        env:
+          RAW_CODE: ${{ github.event.inputs.crd_code }}
+        run: |
+          $codeString = "$env:RAW_CODE"
+          if ($codeString -match '--code="([^"]+)"') { $authCode = $matches[1] }
+          & "${Env:PROGRAMFILES(X86)}\Google\Chrome Remote Desktop\CurrentVersion\remoting_start_host.exe" --code="$authCode" --redirect-url="https://remotedesktop.google.com/_/oauthredirect" --name="LOKENDRA" --pin="14789147"
+
+      - name: 💤 Keep Alive
+        run: while ($true) { Start-Sleep -Seconds 300 }
