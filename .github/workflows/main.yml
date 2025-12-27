@@ -1,4 +1,4 @@
-name: Ultimate Smart RDP (Final Stable)
+name: Ultimate Smart RDP (Final Stable + Apps)
 
 on:
   workflow_dispatch:
@@ -17,34 +17,52 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: 1️⃣ Cleanup
+      - name: Cleanup
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
-          sudo apt-get remove -y firefox google-chrome-stable || true
           sudo apt-get autoremove -y
           sudo apt-get clean
 
-      - name: 2️⃣ Desktop + Audio
+      - name: Desktop + Audio
         run: |
           sudo timedatectl set-timezone Asia/Kolkata
           sudo apt-get update
           sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 \
-            pulseaudio pavucontrol pulseaudio-utils wget curl unzip libfuse2
+            pulseaudio pavucontrol wget curl unzip libfuse2
 
-      - name: 3️⃣ Install Chrome RDP
+      - name: Install Sublime Text
+        run: |
+          wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --dearmor -o /usr/share/keyrings/sublime.gpg
+          echo "deb [signed-by=/usr/share/keyrings/sublime.gpg] https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime.list
+          sudo apt-get update
+          sudo apt-get install -y sublime-text
+
+      - name: Install Dolphin Anty
+        run: |
+          mkdir -p ~/Desktop
+          wget -O ~/Desktop/Dolphin-Anty.AppImage https://dolphin-anty-cdn.com/anty-app/dolphin-anty-linux-x86_64-latest.AppImage
+          chmod +x ~/Desktop/Dolphin-Anty.AppImage
+
+      - name: Install Docker
+        run: |
+          curl -fsSL https://get.docker.com | sh
+          sudo usermod -aG docker $USER
+          sudo chmod 666 /var/run/docker.sock
+
+      - name: Install Chrome RDP
         run: |
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg -i chrome-remote-desktop_current_amd64.deb || sudo apt -f install -y
           echo "exec /usr/bin/xfce4-session" > ~/.chrome-remote-desktop-session
           pulseaudio --start
 
-      - name: 4️⃣ Start Linux RDP
+      - name: Start Linux RDP
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
         run: |
           eval "$RAW_CODE --pin=14789147 --name=LOKENDRA-LINUX"
 
-      - name: 💤 Keep Alive
+      - name: Keep Alive
         run: while true; do sleep 300; done
 
 
@@ -57,7 +75,7 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: 1️⃣ Audio + Policy Fix (NO ERROR)
+      - name: Audio + Policy Fix
         shell: powershell
         run: |
           Set-TimeZone -Id "India Standard Time"
@@ -69,14 +87,22 @@ jobs:
           Get-Service Audiosrv | Where-Object {$_.Status -ne "Running"} | Start-Service
           Get-Service AudioEndpointBuilder | Where-Object {$_.Status -ne "Running"} | Start-Service
 
-      - name: 2️⃣ Install Chrome Remote Desktop
+      - name: Install Chrome Remote Desktop (NO HANG)
         shell: powershell
         run: |
           $msi="$env:TEMP\crd.msi"
           Invoke-WebRequest https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi -OutFile $msi
-          Start-Process msiexec.exe -ArgumentList "/i $msi /qn /norestart" -Wait
+          Start-Process msiexec.exe -ArgumentList "/i `"$msi`" /quiet /norestart" -NoNewWindow
+          Start-Sleep 25
 
-      - name: 3️⃣ Start Windows RDP (AUTO NAME + PIN)
+      - name: Install Apps (Sublime + Dolphin + Docker)
+        shell: powershell
+        run: |
+          choco install sublimetext3 docker-desktop -y --no-progress
+          $Desktop=[Environment]::GetFolderPath("Desktop")
+          Invoke-WebRequest https://dolphin-anty-cdn.com/anty-app/dolphin-anty-win-latest.exe -OutFile "$Desktop\Dolphin-Anty.exe"
+
+      - name: Start Windows RDP (AUTO NAME + PIN)
         shell: powershell
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
@@ -95,5 +121,5 @@ jobs:
             --name="LOKENDRA-WINDOWS" `
             --pin="14789147"
 
-      - name: 💤 Keep Alive
+      - name: Keep Alive
         run: while ($true) { Start-Sleep 300 }
