@@ -1,4 +1,4 @@
-name: Ultimate Smart RDP (Auto-Detect + Error Free)
+name: Ultimate Smart RDP (Fixed & Final)
 
 on:
   workflow_dispatch:
@@ -9,122 +9,116 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 JOB 1: LINUX (Perfected for Speed & Tools)
+  # 🐧 LINUX SETUP (Best for Speed & Docker)
   # ==================================================
-  linux-smart:
+  linux-setup:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
     runs-on: ubuntu-latest
     timeout-minutes: 360
     
     steps:
-      - name: 🧹 Step 1: Deep Cleanup (Space Bachao)
+      - name: 🧹 1. Deep Cleanup (Free Space)
         run: |
-          # Faltu apps hatakar space banayenge
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
           sudo apt-get remove -y firefox google-chrome-stable microsoft-edge-stable || true
           sudo apt-get autoremove -y
           sudo apt-get clean
 
-      - name: ⚙️ Step 2: System Setup (Timezone & Essentials)
+      - name: ⚙️ 2. Essentials & Timezone
         run: |
-          # India Time Set
           sudo timedatectl set-timezone Asia/Kolkata
-          
-          # Zaroori Tools Install
           sudo apt-get update
           sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils file-roller unzip curl wget
-          
-          # Audio Drivers
           sudo apt-get install -y pulseaudio pavucontrol pulseaudio-utils xfce4-pulseaudio-plugin
 
-      - name: 📦 Step 3: Install Apps (Dolphin & Sublime)
+      - name: 📦 3. Install Dolphin & Sublime
         run: |
-          # 1. Sublime Text
+          # Sublime Text
           wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --dearmor --output /usr/share/keyrings/sublimehq-archive.gpg
           echo "deb [arch=amd64 signed-by=/usr/share/keyrings/sublimehq-archive.gpg] https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
           sudo apt-get update
           sudo apt-get install -y sublime-text
 
-          # 2. Dolphin{anty} (Direct CDN Link)
+          # Dolphin{anty} (CDN Link)
           mkdir -p ~/Desktop
-          # Hamesha latest version download hoga
           wget -O ~/Desktop/Dolphin-anty.AppImage "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-linux-x86_64-latest.AppImage"
           chmod +x ~/Desktop/Dolphin-anty.AppImage
           
-          # CRITICAL FIX: AppImage chalane ke liye libfuse2 chahiye
+          # FIX: AppImage needs this library in Ubuntu 22.04+
           sudo apt-get install -y libfuse2
 
-      - name: 🐳 Step 4: Setup Docker (No-Reboot Mode)
+      - name: 🐳 4. Setup Docker (No Reboot)
         run: |
           if ! command -v docker &> /dev/null; then curl -fsSL https://get.docker.com | sh; fi
           sudo usermod -aG docker $USER
           sudo chmod 666 /var/run/docker.sock
           sudo systemctl restart docker
 
-      - name: 🎧 Step 5: Final Config (Audio & CRD)
+      - name: 🎧 5. Final Config (Audio & CRD)
         run: |
-          # Audio Group Add
+          # Add user to audio group
           sudo usermod -a -G audio,pulse,pulse-access $USER
           
-          # Fake Speaker Create (Awaz ke liye)
+          # Create Dummy Speaker
           pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description="Virtual_Dummy_Output"
           
-          # Google CRD Install
+          # Install Chrome Remote Desktop
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
-          # Agar dependency fail hui to ye '-f install' usse fix kar dega
           sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
           
-          # Session define karna (XFCE khulega)
+          # Configure XFCE Session
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
           
-          # Lock Screen Disable (Taaki bar bar password na maange)
+          # Disable Screen Lock
           sudo apt-get install -y gnome-screensaver
           gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
 
-      - name: 🚀 Start Linux RDP
+      - name: 🚀 6. Start Linux RDP
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
         run: |
-          # Naam LOKENDRA aur PIN 14789147 jabardasti set kar rahe hain
+          # Run the code with Fixed Name & PIN
           eval "$RAW_CODE --pin=14789147 --name=LOKENDRA"
 
       - name: 💤 Keep Alive
         run: while true; do sleep 300; done
 
   # ==================================================
-  # 🪟 JOB 2: WINDOWS (Fully Fixed)
+  # 🪟 WINDOWS SETUP (Fixed Missing Files & Errors)
   # ==================================================
-  windows-smart:
+  windows-setup:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
     runs-on: windows-latest
     timeout-minutes: 360
 
     steps:
-      - name: ⚙️ Setup Environment
+      - name: ⚙️ 1. Setup Time & Audio
         run: |
           Set-TimeZone -Id "India Standard Time"
           net start Audiosrv
-          # Audio Driver try karenge, fail hua to ignore karenge
+          
+          # Fixed: Removed '--erroraction' to prevent Chocolatey error
+          Write-Host "Installing VB-Cable..."
           choco install vb-cable -y --no-progress --ignore-checksums --force
-          $LASTEXITCODE = 0 
+          $LASTEXITCODE = 0
 
-      - name: 📥 Install CRD Host (CRITICAL FIX)
+      - name: 📥 2. Install CRD Host (CRITICAL FIX)
         run: |
-          # Ye step pichli baar missing tha, isliye error aaya tha
+          # Ye step pehle missing tha, isliye error aa raha tha
           Write-Host "Downloading Google CRD Installer..."
           $InstallerPath = "$env:TEMP\chromeremotedesktophost.msi"
           Invoke-WebRequest -Uri "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi" -OutFile $InstallerPath
           
-          Write-Host "Installing..."
+          Write-Host "Installing Chrome Remote Desktop..."
           Start-Process -FilePath msiexec.exe -ArgumentList "/i $InstallerPath /qn /norestart" -Wait
 
-      - name: 📦 Install Apps
+      - name: 📦 3. Install Apps (Safe Mode)
         run: |
           choco install sublimetext3 -y --no-progress
           $LASTEXITCODE = 0
 
-          # Dolphin Download (Crash Proof)
+          # Dolphin Download (CDN Link with Try/Catch)
           $DesktopPath = [Environment]::GetFolderPath("Desktop")
           $DolphinUrl = "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-win-latest.exe"
           
@@ -136,18 +130,29 @@ jobs:
               Write-Host "⚠️ Download Failed! Continuing..."
           }
 
-      - name: 🐳 Configure Docker
+      - name: 🐳 4. Configure Docker
         run: Start-Service docker -ErrorAction SilentlyContinue
 
-      - name: 🚀 Start Windows RDP
+      - name: 🚀 5. Start Windows RDP
         shell: powershell
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
         run: |
           $codeString = "$env:RAW_CODE"
-          if ($codeString -match '--code="([^"]+)"') { $authCode = $matches[1] }
           
-          # Ab ye path 100% kaam karega
+          # Extract the Auth Code safely
+          if ($codeString -match 'code="([^"]+)"') { 
+              $authCode = $matches[1] 
+          } elseif ($codeString -match '--code ([^ ]+)') {
+               $authCode = $matches[1]
+          }
+
+          if (-not $authCode) {
+              Write-Error "Code detect nahi hua! Please check input."
+              exit 1
+          }
+
+          # Run Host with Fixed Name LOKENDRA
           & "${Env:PROGRAMFILES(X86)}\Google\Chrome Remote Desktop\CurrentVersion\remoting_start_host.exe" --code="$authCode" --redirect-url="https://remotedesktop.google.com/_/oauthredirect" --name="LOKENDRA" --pin="14789147"
 
       - name: 💤 Keep Alive
