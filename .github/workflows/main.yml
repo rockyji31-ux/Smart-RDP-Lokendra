@@ -1,4 +1,4 @@
-name: Smart RDP (Lokendra Edition)
+name: Smart RDP (Lokendra Final)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX JOB (Agar Code me DISPLAY= hai)
+  # 🐧 LINUX JOB (Updated with New Link)
   # ==================================================
   linux-smart:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -29,7 +29,7 @@ jobs:
           # 1. Timezone (India)
           sudo timedatectl set-timezone Asia/Kolkata
           
-          # 2. Install Essentials & Audio
+          # 2. Essentials & Audio
           sudo apt-get update
           sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils file-roller unzip curl wget
           sudo apt-get install -y pulseaudio pavucontrol pulseaudio-utils xfce4-pulseaudio-plugin
@@ -40,9 +40,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y sublime-text
 
-          # 4. Install Dolphin{anty}
+          # 4. Install Dolphin{anty} (Using New CDN Link)
           mkdir -p ~/Desktop
-          wget -O ~/Desktop/Dolphin-anty.AppImage https://dolphin-anty.com/api/v1/download/linux/latest
+          # Direct CDN link used (Timestamp removed to always fetch latest)
+          wget -O ~/Desktop/Dolphin-anty.AppImage "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-linux-x86_64-latest.AppImage"
           chmod +x ~/Desktop/Dolphin-anty.AppImage
           sudo apt-get install -y libfuse2
 
@@ -56,13 +57,13 @@ jobs:
       - name: 🎧 Audio Fix (PulseAudio)
         run: |
           sudo usermod -a -G audio,pulse,pulse-access $USER
-          # Fake Speaker Create
           pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description="Virtual_Dummy_Output"
           
-          # CRD Install & Session
+          # CRD Install
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
           
+          # Session Config
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
           
@@ -79,7 +80,7 @@ jobs:
         run: while true; do sleep 300; done
 
   # ==================================================
-  # 🪟 WINDOWS JOB (Agar Code me DISPLAY= nahi hai)
+  # 🪟 WINDOWS JOB (Updated with New Link & Crash Proof)
   # ==================================================
   windows-smart:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -91,14 +92,26 @@ jobs:
         run: |
           Set-TimeZone -Id "India Standard Time"
           net start Audiosrv
-          # Attempting VB-Cable for Audio (Might need manual check)
-          choco install vb-cable -y --no-progress --ignore-checksums --force
+          choco install vb-cable -y --no-progress --ignore-checksums --force --erroraction silentlycontinue
 
-      - name: 📦 Install Apps (Dolphin & Sublime)
+      - name: 📦 Install Apps (Safe Mode)
         run: |
+          # Sublime Text
           choco install sublimetext3 -y --no-progress
+
+          # Dolphin Download (New CDN Link + Error Handling)
           $DesktopPath = [Environment]::GetFolderPath("Desktop")
-          Invoke-WebRequest -Uri "https://dolphin-anty.com/api/v1/download/win/latest" -OutFile "$DesktopPath\DolphinInstaller.exe"
+          $DolphinUrl = "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-win-latest.exe"
+          
+          Write-Host "Downloading Dolphin{anty} from CDN..."
+          try {
+              # Timestamp hata diya hai taki hamesha latest mile
+              Invoke-WebRequest -Uri $DolphinUrl -OutFile "$DesktopPath\DolphinInstaller.exe" -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -ErrorAction Stop
+              Write-Host "✅ Dolphin Download Success!"
+          } catch {
+              Write-Host "⚠️ Download Failed! RDP rukega nahi, start ho raha hai."
+              Write-Host "Error Details: $_"
+          }
 
       - name: 🐳 Configure Docker
         run: Start-Service docker -ErrorAction SilentlyContinue
