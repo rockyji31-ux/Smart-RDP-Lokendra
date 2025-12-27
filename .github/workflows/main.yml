@@ -1,4 +1,4 @@
-name: Ultimate Lite RDP (Speed & Sound Only)
+name: Super Lite RDP (Fastest Setup)
 
 on:
   workflow_dispatch:
@@ -9,48 +9,42 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX LITE (Super Fast - 40 Sec Setup)
+  # 🐧 LINUX LITE (Rocket Speed 🚀)
   # ==================================================
   linux-lite:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - name: 🧹 1. Cleanup & Timezone (IST)
+      - name: 🧹 1. Basic Cleanup
         run: |
-          # Set India Time
-          sudo timedatectl set-timezone Asia/Kolkata
-          
-          # Remove Junk to boost speed
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+          # Sirf heavy browsers hatayenge speed ke liye
           sudo apt-get remove -y firefox google-chrome-stable microsoft-edge-stable || true
-          sudo apt-get autoremove -y
           sudo apt-get clean
 
-      - name: ⚙️ 2. Install Essentials Only (XFCE + Sound)
+      - name: ⚙️ 2. Install XFCE & Sound
         run: |
           sudo apt-get update
-          # Sirf Desktop aur Sound drivers dalenge
-          sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils file-roller unzip curl wget
-          sudo apt-get install -y pulseaudio pavucontrol xfce4-pulseaudio-plugin libfuse2
+          sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils
+          sudo apt-get install -y pulseaudio pavucontrol xfce4-pulseaudio-plugin
 
-      - name: 🎧 3. Fix Audio & CRD
+      - name: 🎧 3. Audio & CRD Setup
         run: |
-          # 1. Start PulseAudio Service FIRST (Fixes Connection Refused Error)
+          # 1. Start PulseAudio Service FIRST (Important)
           pulseaudio --start --exit-idle-time=-1
           
           # 2. Create Dummy Speaker
           pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description="Virtual_Output"
           
-          # 3. Install CRD
+          # 3. Install Chrome Remote Desktop
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
           
-          # 4. Configure Session
+          # 4. Session Config
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
           
-          # 5. Disable Screen Lock
+          # 5. Disable Lock Screen
           sudo apt-get install -y gnome-screensaver
           gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
 
@@ -63,7 +57,7 @@ jobs:
         run: while true; do sleep 300; done
 
   # ==================================================
-  # 🪟 WINDOWS LITE (No Apps - Pure Performance)
+  # 🪟 WINDOWS LITE (No Hang - Manual Audio Script)
   # ==================================================
   windows-lite:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -71,10 +65,8 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: 🔓 1. Basic Setup (IST Time)
+      - name: 🔓 1. Enable Audio Registry
         run: |
-          Set-TimeZone -Id "India Standard Time"
-          # Audio Registry Enable
           reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v "fDisableAudioCapture" /t REG_DWORD /d 0 /f
           reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v "fDisableAudioPlayback" /t REG_DWORD /d 0 /f
 
@@ -84,15 +76,15 @@ jobs:
           Invoke-WebRequest -Uri "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi" -OutFile $InstallerPath
           Start-Process -FilePath msiexec.exe -ArgumentList "/i $InstallerPath /qn /norestart" -Wait
 
-      - name: 🪄 3. Create Audio Script (Desktop)
+      - name: 🪄 3. Create Audio Fix Script on Desktop
         shell: powershell
         run: |
           $DesktopPath = [Environment]::GetFolderPath("Desktop")
           $ScriptPath = "$DesktopPath\CLICK_ME_FOR_SOUND.ps1"
           
-          # Wahi script jo kaam karti hai, bas file bana kar rakh denge
+          # Ye wahi script hai jo aapne confirm ki thi
           $Content = @'
-          Write-Host "🚀 Fixing Audio..." -ForegroundColor Green
+          Write-Host "🚀 Installing Sound Driver..." -ForegroundColor Green
           $url = "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip"
           $zipPath = "$env:TEMP\VBCABLE.zip"
           $extractPath = "$env:TEMP\VBCABLE"
@@ -100,6 +92,7 @@ jobs:
           Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
           Start-Process -FilePath "$extractPath\VBCABLE_Setup_x64.exe" -ArgumentList "-i -h" -Verb RunAs -Wait
           
+          Write-Host "🔄 Restarting Audio Services..."
           Stop-Service Audiosrv -Force -ErrorAction SilentlyContinue
           Stop-Service AudioEndpointBuilder -Force -ErrorAction SilentlyContinue
           Start-Sleep -Seconds 2
@@ -108,7 +101,7 @@ jobs:
           Stop-Service -Name chromoting -Force -ErrorAction SilentlyContinue
           Start-Service -Name chromoting
           
-          Write-Host "✅ Audio Fixed!" -ForegroundColor Cyan
+          Write-Host "✅ Audio Fixed! Close this window." -ForegroundColor Cyan
           Start-Sleep -Seconds 5
           '@
           Set-Content -Path $ScriptPath -Value $Content
