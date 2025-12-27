@@ -1,4 +1,4 @@
-name: Smart RDP (Lokendra Final)
+name: Smart RDP (Lokendra Final v2)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX JOB (Updated with New Link)
+  # 🐧 LINUX JOB (No Changes - Working Perfect)
   # ==================================================
   linux-smart:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -26,48 +26,41 @@ jobs:
 
       - name: ⚙️ Setup Environment (IST Time & Apps)
         run: |
-          # 1. Timezone (India)
           sudo timedatectl set-timezone Asia/Kolkata
-          
-          # 2. Essentials & Audio
           sudo apt-get update
           sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils file-roller unzip curl wget
           sudo apt-get install -y pulseaudio pavucontrol pulseaudio-utils xfce4-pulseaudio-plugin
 
-          # 3. Install Sublime Text
+          # Sublime Text
           wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --dearmor --output /usr/share/keyrings/sublimehq-archive.gpg
           echo "deb [arch=amd64 signed-by=/usr/share/keyrings/sublimehq-archive.gpg] https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
           sudo apt-get update
           sudo apt-get install -y sublime-text
 
-          # 4. Install Dolphin{anty} (Using New CDN Link)
+          # Dolphin (New CDN Link)
           mkdir -p ~/Desktop
-          # Direct CDN link used (Timestamp removed to always fetch latest)
           wget -O ~/Desktop/Dolphin-anty.AppImage "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-linux-x86_64-latest.AppImage"
           chmod +x ~/Desktop/Dolphin-anty.AppImage
           sudo apt-get install -y libfuse2
 
-      - name: 🐳 Setup Docker (Ready Mode)
+      - name: 🐳 Setup Docker
         run: |
           if ! command -v docker &> /dev/null; then curl -fsSL https://get.docker.com | sh; fi
           sudo usermod -aG docker $USER
           sudo systemctl restart docker
           newgrp docker || true
 
-      - name: 🎧 Audio Fix (PulseAudio)
+      - name: 🎧 Audio Fix
         run: |
           sudo usermod -a -G audio,pulse,pulse-access $USER
           pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description="Virtual_Dummy_Output"
           
-          # CRD Install
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
           
-          # Session Config
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
           
-          # Disable Lock Screen
           sudo apt-get install -y gnome-screensaver
           gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
 
@@ -80,7 +73,7 @@ jobs:
         run: while true; do sleep 300; done
 
   # ==================================================
-  # 🪟 WINDOWS JOB (Updated with New Link & Crash Proof)
+  # 🪟 WINDOWS JOB (Fixed Audio Error)
   # ==================================================
   windows-smart:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -92,25 +85,27 @@ jobs:
         run: |
           Set-TimeZone -Id "India Standard Time"
           net start Audiosrv
-          choco install vb-cable -y --no-progress --ignore-checksums --force --erroraction silentlycontinue
+          
+          # FIX: Removed '--erroraction' flag. Added exit code reset to ignore failures.
+          Write-Host "Installing Audio Driver..."
+          choco install vb-cable -y --no-progress --ignore-checksums --force
+          $LASTEXITCODE = 0 
 
       - name: 📦 Install Apps (Safe Mode)
         run: |
-          # Sublime Text
           choco install sublimetext3 -y --no-progress
+          $LASTEXITCODE = 0
 
-          # Dolphin Download (New CDN Link + Error Handling)
+          # Dolphin Download (New CDN Link)
           $DesktopPath = [Environment]::GetFolderPath("Desktop")
           $DolphinUrl = "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-win-latest.exe"
           
-          Write-Host "Downloading Dolphin{anty} from CDN..."
+          Write-Host "Downloading Dolphin{anty}..."
           try {
-              # Timestamp hata diya hai taki hamesha latest mile
               Invoke-WebRequest -Uri $DolphinUrl -OutFile "$DesktopPath\DolphinInstaller.exe" -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -ErrorAction Stop
               Write-Host "✅ Dolphin Download Success!"
           } catch {
-              Write-Host "⚠️ Download Failed! RDP rukega nahi, start ho raha hai."
-              Write-Host "Error Details: $_"
+              Write-Host "⚠️ Download Failed! Continuing..."
           }
 
       - name: 🐳 Configure Docker
