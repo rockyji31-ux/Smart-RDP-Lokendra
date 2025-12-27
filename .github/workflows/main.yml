@@ -89,8 +89,8 @@ jobs:
       - name: 💤 Keep Alive
         run: while true; do sleep 300; done
 
-  # ==================================================
-  # 🪟 WINDOWS JOB (Fixed: Installer + Sound + Dolphin)
+# ==================================================
+  # 🪟 WINDOWS SETUP (Audio Force Fix Edition)
   # ==================================================
   windows-setup:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -98,20 +98,31 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: ⚙️ 1. Setup Time & Audio
+      - name: ⚙️ 1. Setup Time & Audio (The Jugad)
         run: |
           Set-TimeZone -Id "India Standard Time"
-          net start Audiosrv
           
-          # FIX: Correctly install VB-Cable without crashing
-          Write-Host "Installing VB-Cable..."
+          # 1. Install Virtual Audio Cable
+          Write-Host "Installing VB-Cable (Fake Speaker)..."
           choco install vb-cable -y --no-progress --ignore-checksums --force
-          # Reset exit code to 0 so GitHub doesn't stop if audio driver fails
           if ($LASTEXITCODE -ne 0) { $global:LASTEXITCODE = 0 }
 
-      - name: 📥 2. Install CRD Host (CRITICAL FIX)
+          # 2. THE JUGAD: Restart Audio Services to detect cable without reboot
+          Write-Host "Restarting Audio Services to detect speaker..."
+          Stop-Service Audiosrv -Force -ErrorAction SilentlyContinue
+          Stop-Service AudioEndpointBuilder -Force -ErrorAction SilentlyContinue
+          Start-Service AudioEndpointBuilder
+          Start-Service Audiosrv
+          
+          # 3. Unmute & Max Volume (PowerShell Trick)
+          # Kabhi kabhi windows mute rehta hai default se
+          $wshShell = New-Object -ComObject WScript.Shell
+          for ($i = 0; $i -lt 50; $i++) {
+            $wshShell.SendKeys([char]175) # Volume Up key press karega 50 baar
+          }
+
+      - name: 📥 2. Install CRD Host
         run: |
-          # Ye file missing thi, ab hum isse manually download karke install karenge
           Write-Host "Downloading Google CRD Installer..."
           $InstallerPath = "$env:TEMP\chromeremotedesktophost.msi"
           Invoke-WebRequest -Uri "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi" -OutFile $InstallerPath
@@ -119,12 +130,12 @@ jobs:
           Write-Host "Installing Chrome Remote Desktop..."
           Start-Process -FilePath msiexec.exe -ArgumentList "/i $InstallerPath /qn /norestart" -Wait
 
-      - name: 📦 3. Install Apps (Safe Mode)
+      - name: 📦 3. Install Apps
         run: |
           choco install sublimetext3 -y --no-progress
           if ($LASTEXITCODE -ne 0) { $global:LASTEXITCODE = 0 }
 
-          # Dolphin Download (CDN Link + Error Handling)
+          # Dolphin Download
           $DesktopPath = [Environment]::GetFolderPath("Desktop")
           $DolphinUrl = "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-win-latest.exe"
           
@@ -133,7 +144,7 @@ jobs:
               Invoke-WebRequest -Uri $DolphinUrl -OutFile "$DesktopPath\DolphinInstaller.exe" -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -ErrorAction Stop
               Write-Host "✅ Dolphin Download Success!"
           } catch {
-              Write-Host "⚠️ Download Failed! RDP will continue anyway."
+              Write-Host "⚠️ Download Failed! Continuing..."
           }
 
       - name: 🐳 4. Configure Docker
@@ -145,8 +156,6 @@ jobs:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
         run: |
           $codeString = "$env:RAW_CODE"
-          
-          # Extract Auth Code Safely (Regex for 'code="..."' or '--code ...')
           if ($codeString -match 'code="([^"]+)"') { 
               $authCode = $matches[1] 
           } elseif ($codeString -match '--code ([^ ]+)') {
@@ -158,7 +167,6 @@ jobs:
               exit 1
           }
 
-          # Run Host with Fixed Name LOKENDRA
           & "${Env:PROGRAMFILES(X86)}\Google\Chrome Remote Desktop\CurrentVersion\remoting_start_host.exe" --code="$authCode" --redirect-url="https://remotedesktop.google.com/_/oauthredirect" --name="LOKENDRA" --pin="14789147"
 
       - name: 💤 Keep Alive
