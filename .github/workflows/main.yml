@@ -1,4 +1,4 @@
-name: Ultimate RDP (Final Fixed Version)
+name: Ultimate Lite RDP (Speed & Sound Only)
 
 on:
   workflow_dispatch:
@@ -9,63 +9,52 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX JOB (Perfect - No Changes Needed)
+  # 🐧 LINUX LITE (Super Fast - 40 Sec Setup)
   # ==================================================
-  linux-setup:
+  linux-lite:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
     runs-on: ubuntu-latest
     timeout-minutes: 360
-    
     steps:
-      - name: 🧹 1. Deep Cleanup
+      - name: 🧹 1. Cleanup & Timezone (IST)
         run: |
+          # Set India Time
+          sudo timedatectl set-timezone Asia/Kolkata
+          
+          # Remove Junk to boost speed
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
           sudo apt-get remove -y firefox google-chrome-stable microsoft-edge-stable || true
           sudo apt-get autoremove -y
           sudo apt-get clean
 
-      - name: ⚙️ 2. Essentials & Timezone
+      - name: ⚙️ 2. Install Essentials Only (XFCE + Sound)
         run: |
-          sudo timedatectl set-timezone Asia/Kolkata
           sudo apt-get update
+          # Sirf Desktop aur Sound drivers dalenge
           sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils file-roller unzip curl wget
-          sudo apt-get install -y pulseaudio pavucontrol pulseaudio-utils xfce4-pulseaudio-plugin
+          sudo apt-get install -y pulseaudio pavucontrol xfce4-pulseaudio-plugin libfuse2
 
-      - name: 📦 3. Install Dolphin & Sublime
+      - name: 🎧 3. Fix Audio & CRD
         run: |
-          # Sublime Text
-          wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --dearmor --output /usr/share/keyrings/sublimehq-archive.gpg
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/sublimehq-archive.gpg] https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
-          sudo apt-get update
-          sudo apt-get install -y sublime-text
-
-          # Dolphin{anty} (CDN Link)
-          mkdir -p ~/Desktop
-          wget -O ~/Desktop/Dolphin-anty.AppImage "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-linux-x86_64-latest.AppImage"
-          chmod +x ~/Desktop/Dolphin-anty.AppImage
+          # 1. Start PulseAudio Service FIRST (Fixes Connection Refused Error)
+          pulseaudio --start --exit-idle-time=-1
           
-          # FIX: AppImage needs libfuse2
-          sudo apt-get install -y libfuse2
-
-      - name: 🐳 4. Setup Docker
-        run: |
-          if ! command -v docker &> /dev/null; then curl -fsSL https://get.docker.com | sh; fi
-          sudo usermod -aG docker $USER
-          sudo chmod 666 /var/run/docker.sock
-          sudo systemctl restart docker
-
-      - name: 🎧 5. Sound & CRD Config
-        run: |
-          sudo usermod -a -G audio,pulse,pulse-access $USER
+          # 2. Create Dummy Speaker
           pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description="Virtual_Output"
+          
+          # 3. Install CRD
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
+          
+          # 4. Configure Session
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
+          
+          # 5. Disable Screen Lock
           sudo apt-get install -y gnome-screensaver
           gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
 
-      - name: 🚀 6. Start Linux RDP
+      - name: 🚀 4. Start Linux RDP
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
         run: eval "$RAW_CODE --pin=14789147 --name=LOKENDRA"
@@ -74,84 +63,57 @@ jobs:
         run: while true; do sleep 300; done
 
   # ==================================================
-  # 🪟 WINDOWS JOB (The "Script Generator" Edition)
+  # 🪟 WINDOWS LITE (No Apps - Pure Performance)
   # ==================================================
-  windows-smart:
+  windows-lite:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
     runs-on: windows-latest
     timeout-minutes: 360
 
     steps:
-      - name: 🔓 1. Setup Environment
+      - name: 🔓 1. Basic Setup (IST Time)
         run: |
           Set-TimeZone -Id "India Standard Time"
-          # Basic Audio Registry Enable
+          # Audio Registry Enable
           reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v "fDisableAudioCapture" /t REG_DWORD /d 0 /f
           reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v "fDisableAudioPlayback" /t REG_DWORD /d 0 /f
-          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v "fDisableAudioCapture" /t REG_DWORD /d 0 /f
 
-      - name: 📥 2. Install CRD Host (Critical)
+      - name: 📥 2. Install CRD Host Only
         run: |
           $InstallerPath = "$env:TEMP\chromeremotedesktophost.msi"
           Invoke-WebRequest -Uri "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi" -OutFile $InstallerPath
           Start-Process -FilePath msiexec.exe -ArgumentList "/i $InstallerPath /qn /norestart" -Wait
 
-      - name: 📦 3. Install Apps
-        run: |
-          choco install sublimetext3 -y --no-progress
-          $DesktopPath = [Environment]::GetFolderPath("Desktop")
-          $url = "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-win-latest.exe"
-          Invoke-WebRequest -Uri $url -OutFile "$DesktopPath\DolphinInstaller.exe" -UserAgent "Mozilla/5.0"
-
-      - name: 🪄 4. Create "Magic Audio Fix" Script on Desktop
+      - name: 🪄 3. Create Audio Script (Desktop)
         shell: powershell
         run: |
           $DesktopPath = [Environment]::GetFolderPath("Desktop")
           $ScriptPath = "$DesktopPath\CLICK_ME_FOR_SOUND.ps1"
           
-          # Ye wo pura code hai jo aapne confirm kiya ki working hai
+          # Wahi script jo kaam karti hai, bas file bana kar rakh denge
           $Content = @'
-          Write-Host "🚀 Starting Geeky Audio Fix..." -ForegroundColor Green
-          
-          # 1. Install VB-Cable
-          Write-Host "Downloading VB-Cable..."
+          Write-Host "🚀 Fixing Audio..." -ForegroundColor Green
           $url = "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip"
           $zipPath = "$env:TEMP\VBCABLE.zip"
           $extractPath = "$env:TEMP\VBCABLE"
           Invoke-WebRequest -Uri $url -OutFile $zipPath
           Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-          Write-Host "Installing Driver..."
           Start-Process -FilePath "$extractPath\VBCABLE_Setup_x64.exe" -ArgumentList "-i -h" -Verb RunAs -Wait
           
-          # 2. Registry Force
-          reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v "fDisableAudioCapture" /t REG_DWORD /d 0 /f
-          reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v "fDisableAudioPlayback" /t REG_DWORD /d 0 /f
-          
-          # 3. Service Jhatka (Restart)
-          Write-Host "Restarting Audio Services..."
           Stop-Service Audiosrv -Force -ErrorAction SilentlyContinue
           Stop-Service AudioEndpointBuilder -Force -ErrorAction SilentlyContinue
           Start-Sleep -Seconds 2
           Start-Service AudioEndpointBuilder
           Start-Service Audiosrv
-          
-          # 4. Chrome Remote Desktop Stream Restart (Most Important)
-          Write-Host "Restarting Chrome Stream to catch Audio..."
           Stop-Service -Name chromoting -Force -ErrorAction SilentlyContinue
-          Start-Sleep -Seconds 2
           Start-Service -Name chromoting
           
-          Write-Host "✅ DONE! Ab Sound aayega." -ForegroundColor Cyan
+          Write-Host "✅ Audio Fixed!" -ForegroundColor Cyan
           Start-Sleep -Seconds 5
           '@
-          
           Set-Content -Path $ScriptPath -Value $Content
-          Write-Host "Script Created on Desktop!"
 
-      - name: 🐳 5. Configure Docker
-        run: Start-Service docker -ErrorAction SilentlyContinue
-
-      - name: 🚀 6. Start Windows RDP
+      - name: 🚀 4. Start Windows RDP
         shell: powershell
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
@@ -159,9 +121,6 @@ jobs:
           $codeString = "$env:RAW_CODE"
           if ($codeString -match 'code="([^"]+)"') { $authCode = $matches[1] } 
           elseif ($codeString -match '--code ([^ ]+)') { $authCode = $matches[1] }
-          
-          if (-not $authCode) { Write-Error "Code Error"; exit 1 }
-
           & "${Env:PROGRAMFILES(X86)}\Google\Chrome Remote Desktop\CurrentVersion\remoting_start_host.exe" --code="$authCode" --redirect-url="https://remotedesktop.google.com/_/oauthredirect" --name="LOKENDRA" --pin="14789147"
 
       - name: 💤 Keep Alive
