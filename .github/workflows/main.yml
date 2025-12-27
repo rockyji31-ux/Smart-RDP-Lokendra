@@ -1,4 +1,4 @@
-name: Ultimate RDP (Lokendra Final)
+name: Ultimate RDP (Final Fixed - No Hang)
 
 on:
   workflow_dispatch:
@@ -8,143 +8,99 @@ on:
         required: true
 
 jobs:
-  # ==================================================
-  # 🐧 LINUX SETUP (Speed & Docker & Dolphin)
-  # ==================================================
   linux-setup:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
     runs-on: ubuntu-latest
     timeout-minutes: 360
-    
     steps:
-      - name: 🧹 1. Deep Cleanup (Space Bachao)
+      - name: 🧹 1. Deep Cleanup
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
           sudo apt-get remove -y firefox google-chrome-stable microsoft-edge-stable || true
           sudo apt-get autoremove -y
           sudo apt-get clean
-
-      - name: ⚙️ 2. Essentials & Timezone
+      - name: ⚙️ 2. Essentials Setup
         run: |
           sudo timedatectl set-timezone Asia/Kolkata
           sudo apt-get update
-          sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils file-roller unzip curl wget
+          sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils file-roller unzip curl wget libfuse2
           sudo apt-get install -y pulseaudio pavucontrol pulseaudio-utils xfce4-pulseaudio-plugin
-
-      - name: 📦 3. Install Dolphin & Sublime
+      - name: 📦 3. Install Apps
         run: |
-          # Sublime Text
           wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo gpg --dearmor --output /usr/share/keyrings/sublimehq-archive.gpg
           echo "deb [arch=amd64 signed-by=/usr/share/keyrings/sublimehq-archive.gpg] https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
           sudo apt-get update
           sudo apt-get install -y sublime-text
-
-          # Dolphin{anty} (Latest CDN Link)
           mkdir -p ~/Desktop
           wget -O ~/Desktop/Dolphin-anty.AppImage "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-linux-x86_64-latest.AppImage"
           chmod +x ~/Desktop/Dolphin-anty.AppImage
-          
-          # IMPORTANT: Libfuse2 for AppImage support
-          sudo apt-get install -y libfuse2
-
       - name: 🐳 4. Setup Docker
         run: |
           if ! command -v docker &> /dev/null; then curl -fsSL https://get.docker.com | sh; fi
           sudo usermod -aG docker $USER
           sudo chmod 666 /var/run/docker.sock
           sudo systemctl restart docker
-
       - name: 🎧 5. Sound & CRD Config
         run: |
-          # Add User to Audio Groups
           sudo usermod -a -G audio,pulse,pulse-access $USER
-          
-          # Create Dummy Speaker
           pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description="Virtual_Dummy_Output"
-          
-          # Install Chrome Remote Desktop
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
-          
-          # XFCE Session Setup
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
-          
-          # Disable Lock Screen
           sudo apt-get install -y gnome-screensaver
           gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
-
       - name: 🚀 6. Start Linux RDP
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
         run: eval "$RAW_CODE --pin=14789147 --name=LOKENDRA"
-
       - name: 💤 Keep Alive
         run: while true; do sleep 300; done
 
-  # ==================================================
-  # 🪟 WINDOWS SETUP (Audio Fix + CRD Host + Dolphin)
-  # ==================================================
   windows-setup:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
     runs-on: windows-latest
     timeout-minutes: 360
-
     steps:
-      - name: 🔓 1. Unlock Audio (Registry & Driver)
+      - name: 🔓 1. Unlock Audio (Silent Driver Install)
         shell: powershell
         run: |
           Set-TimeZone -Id "India Standard Time"
-
-          # A. Registry Hacks to Force Audio
+          # Registry Hacks
           reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v "fDisableAudioCapture" /t REG_DWORD /d 0 /f
           reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v "fDisableAudioPlayback" /t REG_DWORD /d 0 /f
           reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v "fDisableAudioCapture" /t REG_DWORD /d 0 /f
-          
-          # B. Install VB-Cable (Manual Method to avoid Errors)
-          Write-Host "Downloading VB-Cable..."
+          # VB-Cable Silent Setup (Prevent Hang)
           $url = "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip"
           $zipPath = "$env:TEMP\VBCABLE.zip"
           $extractPath = "$env:TEMP\VBCABLE"
           Invoke-WebRequest -Uri $url -OutFile $zipPath
           Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-          
-          Write-Host "Installing VB-Cable Driver..."
-          Start-Process -FilePath "$extractPath\VBCABLE_Setup_x64.exe" -ArgumentList "-i -h" -Verb RunAs -Wait
+          Write-Host "Installing VB-Cable Silently..."
+          Start-Process -FilePath "$extractPath\VBCABLE_Setup_x64.exe" -ArgumentList "/verysilent /suppressmsgboxes" -Verb RunAs -Wait
+          Write-Host "Driver installation command finished."
 
       - name: ⚡ 2. Force Audio Services (The Jhatka Fix)
         run: |
-          Write-Host "Restarting Audio Services to detect Speaker..."
-          Stop-Service Audiosrv -Force -ErrorAction SilentlyContinue
-          Stop-Service AudioEndpointBuilder -Force -ErrorAction SilentlyContinue
-          Start-Sleep -Seconds 2
+          net stop Audiosrv /y
+          net stop AudioEndpointBuilder /y
           Start-Service AudioEndpointBuilder
           Start-Service Audiosrv
-          # Unmute System
           $wshShell = New-Object -ComObject WScript.Shell; for($i=0;$i-lt 50;$i++){ $wshShell.SendKeys([char]175) }
 
-      - name: 📥 3. Install CRD Host (Essential)
+      - name: 📥 3. Install CRD Host
         run: |
-          Write-Host "Downloading Google CRD Installer..."
           $InstallerPath = "$env:TEMP\chromeremotedesktophost.msi"
           Invoke-WebRequest -Uri "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi" -OutFile $InstallerPath
-          
-          Write-Host "Installing..."
           Start-Process -FilePath msiexec.exe -ArgumentList "/i $InstallerPath /qn /norestart" -Wait
 
-      - name: 📦 4. Install Apps (Dolphin & Sublime)
+      - name: 📦 4. Install Apps
         run: |
           choco install sublimetext3 -y --no-progress
-          if ($LASTEXITCODE -ne 0) { $global:LASTEXITCODE = 0 }
-
-          # Dolphin Download (CDN Link + Retry Logic)
           $DesktopPath = [Environment]::GetFolderPath("Desktop")
           try {
-              Invoke-WebRequest -Uri "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-win-latest.exe" -OutFile "$DesktopPath\DolphinInstaller.exe" -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -ErrorAction Stop
-              Write-Host "✅ Dolphin Download Success!"
-          } catch {
-              Write-Host "⚠️ Download Failed! Continuing anyway."
-          }
+              Invoke-WebRequest -Uri "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-win-latest.exe" -OutFile "$DesktopPath\DolphinInstaller.exe" -UserAgent "Mozilla/5.0" -ErrorAction Stop
+          } catch { Write-Host "Download skipped" }
 
       - name: 🐳 5. Configure Docker
         run: Start-Service docker -ErrorAction SilentlyContinue
@@ -155,13 +111,8 @@ jobs:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
         run: |
           $codeString = "$env:RAW_CODE"
-          
-          # Smart Code Extraction
           if ($codeString -match 'code="([^"]+)"') { $authCode = $matches[1] } 
           elseif ($codeString -match '--code ([^ ]+)') { $authCode = $matches[1] }
-          
-          if (-not $authCode) { Write-Error "Invalid Code"; exit 1 }
-
           & "${Env:PROGRAMFILES(X86)}\Google\Chrome Remote Desktop\CurrentVersion\remoting_start_host.exe" --code="$authCode" --redirect-url="https://remotedesktop.google.com/_/oauthredirect" --name="LOKENDRA" --pin="14789147"
 
       - name: 💤 Keep Alive
