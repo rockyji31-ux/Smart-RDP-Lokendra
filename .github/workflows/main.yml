@@ -1,4 +1,4 @@
-name: Ultimate Smart RDP (Fixed & Final)
+name: Ultimate RDP (Final Fixed Version)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX SETUP (Best for Speed & Docker)
+  # 🐧 LINUX JOB (Setup for Speed, Docker & Dolphin)
   # ==================================================
   linux-setup:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -17,18 +17,23 @@ jobs:
     timeout-minutes: 360
     
     steps:
-      - name: 🧹 1. Deep Cleanup (Free Space)
+      - name: 🧹 1. Deep Cleanup (Space Bachao)
         run: |
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
           sudo apt-get remove -y firefox google-chrome-stable microsoft-edge-stable || true
           sudo apt-get autoremove -y
           sudo apt-get clean
 
-      - name: ⚙️ 2. Essentials & Timezone
+      - name: ⚙️ 2. Essentials Setup
         run: |
+          # Timezone India
           sudo timedatectl set-timezone Asia/Kolkata
+          
+          # Install Basic Tools
           sudo apt-get update
           sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils file-roller unzip curl wget
+          
+          # Install Audio Drivers
           sudo apt-get install -y pulseaudio pavucontrol pulseaudio-utils xfce4-pulseaudio-plugin
 
       - name: 📦 3. Install Dolphin & Sublime
@@ -44,22 +49,22 @@ jobs:
           wget -O ~/Desktop/Dolphin-anty.AppImage "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-linux-x86_64-latest.AppImage"
           chmod +x ~/Desktop/Dolphin-anty.AppImage
           
-          # FIX: AppImage needs this library in Ubuntu 22.04+
+          # FIX: AppImage needs libfuse2 to run on Ubuntu
           sudo apt-get install -y libfuse2
 
-      - name: 🐳 4. Setup Docker (No Reboot)
+      - name: 🐳 4. Setup Docker
         run: |
           if ! command -v docker &> /dev/null; then curl -fsSL https://get.docker.com | sh; fi
           sudo usermod -aG docker $USER
           sudo chmod 666 /var/run/docker.sock
           sudo systemctl restart docker
 
-      - name: 🎧 5. Final Config (Audio & CRD)
+      - name: 🎧 5. Final Config (Sound & CRD)
         run: |
-          # Add user to audio group
+          # Audio Group Fix
           sudo usermod -a -G audio,pulse,pulse-access $USER
           
-          # Create Dummy Speaker
+          # Create Dummy Speaker (For Sound)
           pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description="Virtual_Dummy_Output"
           
           # Install Chrome Remote Desktop
@@ -78,14 +83,14 @@ jobs:
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
         run: |
-          # Run the code with Fixed Name & PIN
+          # Execute Code with Name LOKENDRA
           eval "$RAW_CODE --pin=14789147 --name=LOKENDRA"
 
       - name: 💤 Keep Alive
         run: while true; do sleep 300; done
 
   # ==================================================
-  # 🪟 WINDOWS SETUP (Fixed Missing Files & Errors)
+  # 🪟 WINDOWS JOB (Fixed: Installer + Sound + Dolphin)
   # ==================================================
   windows-setup:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -98,14 +103,15 @@ jobs:
           Set-TimeZone -Id "India Standard Time"
           net start Audiosrv
           
-          # Fixed: Removed '--erroraction' to prevent Chocolatey error
+          # FIX: Correctly install VB-Cable without crashing
           Write-Host "Installing VB-Cable..."
           choco install vb-cable -y --no-progress --ignore-checksums --force
-          $LASTEXITCODE = 0
+          # Reset exit code to 0 so GitHub doesn't stop if audio driver fails
+          if ($LASTEXITCODE -ne 0) { $global:LASTEXITCODE = 0 }
 
       - name: 📥 2. Install CRD Host (CRITICAL FIX)
         run: |
-          # Ye step pehle missing tha, isliye error aa raha tha
+          # Ye file missing thi, ab hum isse manually download karke install karenge
           Write-Host "Downloading Google CRD Installer..."
           $InstallerPath = "$env:TEMP\chromeremotedesktophost.msi"
           Invoke-WebRequest -Uri "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi" -OutFile $InstallerPath
@@ -116,9 +122,9 @@ jobs:
       - name: 📦 3. Install Apps (Safe Mode)
         run: |
           choco install sublimetext3 -y --no-progress
-          $LASTEXITCODE = 0
+          if ($LASTEXITCODE -ne 0) { $global:LASTEXITCODE = 0 }
 
-          # Dolphin Download (CDN Link with Try/Catch)
+          # Dolphin Download (CDN Link + Error Handling)
           $DesktopPath = [Environment]::GetFolderPath("Desktop")
           $DolphinUrl = "https://dolphin-anty-cdn.com/anty-app/dolphin-anty-win-latest.exe"
           
@@ -127,7 +133,7 @@ jobs:
               Invoke-WebRequest -Uri $DolphinUrl -OutFile "$DesktopPath\DolphinInstaller.exe" -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" -ErrorAction Stop
               Write-Host "✅ Dolphin Download Success!"
           } catch {
-              Write-Host "⚠️ Download Failed! Continuing..."
+              Write-Host "⚠️ Download Failed! RDP will continue anyway."
           }
 
       - name: 🐳 4. Configure Docker
@@ -140,7 +146,7 @@ jobs:
         run: |
           $codeString = "$env:RAW_CODE"
           
-          # Extract the Auth Code safely
+          # Extract Auth Code Safely (Regex for 'code="..."' or '--code ...')
           if ($codeString -match 'code="([^"]+)"') { 
               $authCode = $matches[1] 
           } elseif ($codeString -match '--code ([^ ]+)') {
