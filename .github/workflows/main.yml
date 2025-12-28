@@ -1,4 +1,4 @@
-name: Smart RDP (Final Safe Version)
+name: Ultimate Smart RDP (Auto-Fix & Cleaner)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX JOB (Safe & Working)
+  # 🐧 LINUX JOB (LOKENDRA-LINUX) - Perfected
   # ==================================================
   linux-smart:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -20,7 +20,7 @@ jobs:
       - name: 🔔 Notify Start
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🐧 *Linux Setup Started...*\nWait: ~40s"}' \
+          -d '{"message": "🐧 *Linux Setup Started...*\nName: LOKENDRA-LINUX\nWait: ~45s"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 🧹 1. Smart Cleanup
@@ -42,7 +42,7 @@ jobs:
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
           
-          # Wahi purana WORKING logic
+          # Internal Session Audio Logic (Tested & Working)
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
           echo "pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description='Virtual_Output'" >> ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
@@ -68,7 +68,7 @@ jobs:
           -d '{"message": "❌ *Linux Setup Failed!* Check logs."}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
-      - name: 💤 Keep Alive (With Alert)
+      - name: 💤 Keep Alive
         run: |
           timeout 21000s bash -c "while true; do sleep 300; done" || true
           curl -X POST -H "Content-Type: application/json" \
@@ -76,7 +76,7 @@ jobs:
           ${{ secrets.N8N_WEBHOOK }} || true
 
   # ==================================================
-  # 🪟 WINDOWS JOB (Fixed Notifications)
+  # 🪟 WINDOWS JOB (LOKENDRA-WINDOWS) - Fixed & Clean
   # ==================================================
   windows-smart:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -88,7 +88,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *Windows Setup Started...*\nWait: ~2 min"}' \
+          -d '{"message": "🪟 *Windows Setup Started...*\nName: LOKENDRA-WINDOWS\nWait: ~2 min"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 🔓 1. Enable Audio Registry
@@ -102,13 +102,13 @@ jobs:
           Invoke-WebRequest -Uri "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi" -OutFile $InstallerPath
           Start-Process -FilePath msiexec.exe -ArgumentList "/i $InstallerPath /qn /norestart" -Wait
 
-      - name: 🤖 3. Inject Auto-Run Script
+      - name: 🪄 3. Create Audio Fix (Hidden Logic)
         shell: powershell
         run: |
-          $StartupPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
-          $ScriptPath = "$StartupPath\AutoFixAudio.ps1"
-          $Content = @'
-          Write-Host "🚀 Auto-Fixing Audio..." -ForegroundColor Green
+          # 1. Create the Main PowerShell Script in C:\ (Hidden Safe Place)
+          $AudioScriptPath = "C:\AudioFix.ps1"
+          $AudioContent = @'
+          Write-Host "🚀 Starting Audio Fix..." -ForegroundColor Green
           if (-not (Test-Path "$env:TEMP\VBCABLE")) {
               $url = "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip"
               Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\VBCABLE.zip"
@@ -119,10 +119,46 @@ jobs:
           Start-Service Audiosrv
           Stop-Service chromoting -Force -ErrorAction SilentlyContinue
           Start-Service chromoting
+          Write-Host "✅ Audio Fixed!"
+          Start-Sleep -Seconds 5
           '@
-          Set-Content -Path $ScriptPath -Value $Content
+          Set-Content -Path $AudioScriptPath -Value $AudioContent
 
-      - name: 🚀 4. Start Windows RDP
+          # 2. Create "Launcher.bat" in Startup Folder (This triggers the PS1)
+          $StartupPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\StartAudio.bat"
+          $BatContent = 'powershell -ExecutionPolicy Bypass -File "C:\AudioFix.ps1"'
+          Set-Content -Path $StartupPath -Value $BatContent
+          
+          # 3. Create Desktop Backup Shortcut
+          $DesktopBatPath = "$env:USERPROFILE\Desktop\🔊 Fix_Audio.bat"
+          Set-Content -Path $DesktopBatPath -Value $BatContent
+
+      - name: 🧹 4. Create "Manual Cleaner" on Desktop
+        shell: powershell
+        run: |
+          $CleanerPath = "$env:USERPROFILE\Desktop\🧹 Clean_Junk.bat"
+          $CleanerContent = @'
+          @echo off
+          echo "🚀 Cleaning Heavy Junk... (Please Wait)"
+          
+          echo "Stopping Services..."
+          net stop MSSQL$SQLEXPRESS /y
+          net stop MSSQLSERVER /y
+          
+          echo "Deleting Heavy Folders (Visual Studio, Android SDK, etc)..."
+          rmdir /s /q "C:\Program Files\Microsoft Visual Studio"
+          rmdir /s /q "C:\Program Files (x86)\Microsoft Visual Studio"
+          rmdir /s /q "C:\Program Files\Microsoft SQL Server"
+          rmdir /s /q "C:\Android"
+          rmdir /s /q "C:\Program Files\PostgreSQL"
+          rmdir /s /q "C:\Program Files\MongoDB"
+          
+          echo "✅ Junk Cleaned! RAM is now Free."
+          pause
+          '@
+          Set-Content -Path $CleanerPath -Value $CleanerContent
+
+      - name: 🚀 5. Start Windows RDP
         shell: powershell
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
@@ -136,7 +172,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *LOKENDRA-WINDOWS Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\n💡 *Audio:* Auto-script runs on login."}' \
+          -d '{"message": "🪟 *LOKENDRA-WINDOWS Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\n\n💡 *Action:* Login karte hi Audio apne aap fix hoga. Agar PC heavy lage toh Desktop par `Clean_Junk` run karna."}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: ❌ Notify Failure
@@ -147,7 +183,7 @@ jobs:
           -d '{"message": "❌ *Windows Setup Failed!* Check logs."}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
-      - name: 💤 Keep Alive (With Stop Alert)
+      - name: 💤 Keep Alive
         shell: bash
         run: |
           sleep 21000
