@@ -1,4 +1,4 @@
-name: Ultimate Smart RDP (Auto-Fix & Cleaner)
+name: Ultimate RDP (Stable Final)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX JOB (LOKENDRA-LINUX) - Perfected
+  # 🐧 LINUX JOB (LOKENDRA-LINUX) - No Changes
   # ==================================================
   linux-smart:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -42,7 +42,7 @@ jobs:
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
           
-          # Internal Session Audio Logic (Tested & Working)
+          # Internal Session Audio Logic
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
           echo "pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description='Virtual_Output'" >> ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
@@ -76,7 +76,7 @@ jobs:
           ${{ secrets.N8N_WEBHOOK }} || true
 
   # ==================================================
-  # 🪟 WINDOWS JOB (LOKENDRA-WINDOWS) - Fixed & Clean
+  # 🪟 WINDOWS JOB (LOKENDRA-WINDOWS) - Fixed Path Names
   # ==================================================
   windows-smart:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -102,13 +102,13 @@ jobs:
           Invoke-WebRequest -Uri "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi" -OutFile $InstallerPath
           Start-Process -FilePath msiexec.exe -ArgumentList "/i $InstallerPath /qn /norestart" -Wait
 
-      - name: 🪄 3. Create Audio Fix (Hidden Logic)
+      - name: 🪄 3. Create Audio Fix & Launcher
         shell: powershell
         run: |
           # 1. Create the Main PowerShell Script in C:\ (Hidden Safe Place)
           $AudioScriptPath = "C:\AudioFix.ps1"
           $AudioContent = @'
-          Write-Host "🚀 Starting Audio Fix..." -ForegroundColor Green
+          Write-Host "Starting Audio Fix..."
           if (-not (Test-Path "$env:TEMP\VBCABLE")) {
               $url = "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip"
               Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\VBCABLE.zip"
@@ -119,41 +119,34 @@ jobs:
           Start-Service Audiosrv
           Stop-Service chromoting -Force -ErrorAction SilentlyContinue
           Start-Service chromoting
-          Write-Host "✅ Audio Fixed!"
+          Write-Host "Audio Fixed!"
           Start-Sleep -Seconds 5
           '@
           Set-Content -Path $AudioScriptPath -Value $AudioContent
 
-          # 2. Create "Launcher.bat" in Startup Folder (This triggers the PS1)
+          # 2. Create "Launcher.bat" in Startup Folder
           $StartupPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\StartAudio.bat"
           $BatContent = 'powershell -ExecutionPolicy Bypass -File "C:\AudioFix.ps1"'
           Set-Content -Path $StartupPath -Value $BatContent
           
-          # 3. Create Desktop Backup Shortcut
-          $DesktopBatPath = "$env:USERPROFILE\Desktop\🔊 Fix_Audio.bat"
+          # 3. Create Desktop Backup Shortcut (REMOVED EMOJI TO PREVENT ERROR)
+          $DesktopBatPath = "$env:USERPROFILE\Desktop\Fix_Audio.bat"
           Set-Content -Path $DesktopBatPath -Value $BatContent
 
       - name: 🧹 4. Create "Manual Cleaner" on Desktop
         shell: powershell
         run: |
-          $CleanerPath = "$env:USERPROFILE\Desktop\🧹 Clean_Junk.bat"
+          # REMOVED EMOJI FROM FILENAME
+          $CleanerPath = "$env:USERPROFILE\Desktop\Clean_Junk.bat"
           $CleanerContent = @'
           @echo off
-          echo "🚀 Cleaning Heavy Junk... (Please Wait)"
-          
-          echo "Stopping Services..."
+          echo "Cleaning Heavy Junk..."
           net stop MSSQL$SQLEXPRESS /y
           net stop MSSQLSERVER /y
-          
-          echo "Deleting Heavy Folders (Visual Studio, Android SDK, etc)..."
           rmdir /s /q "C:\Program Files\Microsoft Visual Studio"
           rmdir /s /q "C:\Program Files (x86)\Microsoft Visual Studio"
-          rmdir /s /q "C:\Program Files\Microsoft SQL Server"
           rmdir /s /q "C:\Android"
-          rmdir /s /q "C:\Program Files\PostgreSQL"
-          rmdir /s /q "C:\Program Files\MongoDB"
-          
-          echo "✅ Junk Cleaned! RAM is now Free."
+          echo "Done."
           pause
           '@
           Set-Content -Path $CleanerPath -Value $CleanerContent
@@ -172,7 +165,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *LOKENDRA-WINDOWS Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\n\n💡 *Action:* Login karte hi Audio apne aap fix hoga. Agar PC heavy lage toh Desktop par `Clean_Junk` run karna."}' \
+          -d '{"message": "🪟 *LOKENDRA-WINDOWS Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\nAudio Script runs automatically on login."}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: ❌ Notify Failure
