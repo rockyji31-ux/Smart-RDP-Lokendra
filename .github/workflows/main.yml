@@ -1,4 +1,4 @@
-name: Super Lite RDP (Fastest Setup)
+name: Super Lite RDP (Audio Fixed)
 
 on:
   workflow_dispatch:
@@ -9,42 +9,42 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX LITE (Rocket Speed 🚀)
+  # 🐧 LINUX LITE (Fixed Audio Logic)
   # ==================================================
   linux-lite:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
     runs-on: ubuntu-latest
     timeout-minutes: 360
     steps:
-      - name: 🧹 1. Basic Cleanup
+      - name: 🧹 1. Basic Cleanup (Speed)
         run: |
-          # Sirf heavy browsers hatayenge speed ke liye
           sudo apt-get remove -y firefox google-chrome-stable microsoft-edge-stable || true
           sudo apt-get clean
 
-      - name: ⚙️ 2. Install XFCE & Sound
+      - name: ⚙️ 2. Install Desktop & Audio Packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils
-          sudo apt-get install -y pulseaudio pavucontrol xfce4-pulseaudio-plugin
+          # Desktop Environment
+          sudo apt-get install -y --no-install-recommends xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils
+          # Audio Drivers (Ye wahi packages hain jo aapke code me the)
+          sudo apt-get install -y pulseaudio pavucontrol pulseaudio-utils xfce4-pulseaudio-plugin libfuse2
 
-      - name: 🎧 3. Audio & CRD Setup
+      - name: 🎧 3. Setup Audio & Session (The Fix)
         run: |
-          # 1. Start PulseAudio Service FIRST (Important)
-          pulseaudio --start --exit-idle-time=-1
+          # 1. User ko Audio Groups me daalna (Zaroori hai)
+          sudo usermod -a -G audio,pulse,pulse-access $USER
           
-          # 2. Create Dummy Speaker
-          pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description="Virtual_Output"
-          
-          # 3. Install Chrome Remote Desktop
+          # 2. Chrome Remote Desktop Install
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
           
-          # 4. Session Config
+          # 3. SESSION CONFIGURATION (Ye aapke purane code wala logic hai)
+          # PulseAudio ko session ke andar start karenge + Dummy Speaker banayenge
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
+          echo "pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description='Virtual_Output'" >> ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
           
-          # 5. Disable Lock Screen
+          # 4. Disable Lock Screen
           sudo apt-get install -y gnome-screensaver
           gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
 
@@ -57,7 +57,7 @@ jobs:
         run: while true; do sleep 300; done
 
   # ==================================================
-  # 🪟 WINDOWS LITE (No Hang - Manual Audio Script)
+  # 🪟 WINDOWS LITE (Manual Audio Script)
   # ==================================================
   windows-lite:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -82,7 +82,6 @@ jobs:
           $DesktopPath = [Environment]::GetFolderPath("Desktop")
           $ScriptPath = "$DesktopPath\CLICK_ME_FOR_SOUND.ps1"
           
-          # Ye wahi script hai jo aapne confirm ki thi
           $Content = @'
           Write-Host "🚀 Installing Sound Driver..." -ForegroundColor Green
           $url = "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip"
