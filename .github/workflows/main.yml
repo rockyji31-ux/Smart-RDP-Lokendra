@@ -1,4 +1,4 @@
-name: Ultimate RDP (Error Free Fix)
+name: Ultimate RDP (Final Clean Setup)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX (No Changes - Working Perfect)
+  # 🐧 LINUX (No Changes)
   # ==================================================
   linux-lite:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -50,7 +50,7 @@ jobs:
         run: timeout 21000s bash -c "while true; do sleep 300; done" || true
 
   # ==================================================
-  # 🪟 WINDOWS (Path Error Fixed)
+  # 🪟 WINDOWS (Systematic & Clean Instructions)
   # ==================================================
   windows-lite:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -78,38 +78,40 @@ jobs:
           $ScriptPath = "$env:USERPROFILE\Desktop\Fix_All.bat"
           $Content = @'
           @echo off
-          Title Lokendra RDP Fixer
+          Title Lokendra RDP Setup
           color 0B
-          echo "=============================================="
-          echo "🚀 CONFIGURING DARK MODE & AUDIO..."
-          echo "=============================================="
+          cls
+          echo ==================================================
+          echo      LOKENDRA RDP: SYSTEM OPTIMIZATION
+          echo ==================================================
           echo.
 
-          echo "1. Enabling Dark Mode (Eyes Protection)..."
-          powershell -Command "New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name AppsUseLightTheme -Value 0 -Type Dword -Force"
-          powershell -Command "New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name SystemUsesLightTheme -Value 0 -Type Dword -Force"
+          echo [1/4] Configuring Dark Mode, Timezone (India) & Format...
+          powershell -Command "Set-TimeZone -Id 'India Standard Time'; New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name AppsUseLightTheme -Value 0 -Type Dword -Force; New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name SystemUsesLightTheme -Value 0 -Type Dword -Force; Set-ItemProperty -Path 'HKCU:\Control Panel\International' -Name sShortTime -Value 'h:mm tt'"
 
-          echo "2. Setting Timezone (India) & Format..."
-          powershell -Command "Set-TimeZone -Id 'India Standard Time'; Set-ItemProperty -Path 'HKCU:\Control Panel\International' -Name sShortTime -Value 'h:mm tt'; Get-Process explorer | Stop-Process"
-
-          echo "3. Stopping Junk (Speed Boost)..."
+          echo [2/4] Stopping Heavy Services (Speed Boost)...
           powershell -Command "Stop-Service 'SysMain', 'wuauserv' -Force -ErrorAction SilentlyContinue"
 
-          echo "4. Downloading Audio Driver (Fixed Path)..."
-          :: Using C:\ directly to avoid Variable Expansion Errors
-          powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $url = 'https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip'; $dest = 'C:\VB.zip'; Invoke-WebRequest -Uri $url -OutFile $dest; Expand-Archive $dest -Dest 'C:\VB' -Force"
-          
-          echo "5. Installing Driver..."
-          powershell -Command "Start-Process -FilePath 'C:\VB\VBCABLE_Setup_x64.exe' -ArgumentList '-i -h' -Verb RunAs -Wait"
+          echo [3/4] Installing Audio Driver (C:\VB)...
+          powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $url = 'https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip'; $dest = 'C:\VB.zip'; Invoke-WebRequest -Uri $url -OutFile $dest; Expand-Archive $dest -Dest 'C:\VB' -Force; Start-Process -FilePath 'C:\VB\VBCABLE_Setup_x64.exe' -ArgumentList '-i -h' -Verb RunAs -Wait"
+
+          echo [4/4] Refreshing Windows Explorer...
+          powershell -Command "Get-Process explorer | Stop-Process"
 
           echo.
-          echo "=============================================="
-          echo "⚠️  DISCONNECTING TO APPLY AUDIO FIX..."
-          echo "⚠️  Reconnect now for Sound + Dark Mode."
-          echo "=============================================="
-          timeout /t 4
+          echo ==================================================
+          echo           SETUP COMPLETE! READ CAREFULLY:
+          echo ==================================================
+          echo.
+          echo 1. Connection abhi DISCONNECT hoga (Ye Normal hai).
+          echo 2. Is link par wapas jao: https://remotedesktop.google.com/access
+          echo 3. Wahan 'LOKENDRA-WINDOWS' par wapas click karo.
+          echo.
+          echo      >>> AUDIO & DARK MODE WILL BE READY <<<
+          echo ==================================================
+          timeout /t 8
 
-          echo "6. Restarting Services..."
+          :: Restart Services (This kills the connection)
           powershell -Command "Stop-Service Audiosrv -Force; Start-Service Audiosrv; Stop-Service chromoting -Force; Start-Service chromoting"
           '@
           Set-Content -Path $ScriptPath -Value $Content
@@ -126,7 +128,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n\n🌑 *Step:* Login karke `Fix_All.bat` chalao (Ab Error nahi aayega)."}' \
+          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n\n📌 *Last Step:* Desktop par `Fix_All.bat` chalao."}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 💤 Keep Alive
