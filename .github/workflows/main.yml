@@ -1,4 +1,4 @@
-name: Ultimate RDP (Final Clean Setup)
+name: Ultimate RDP (Final Fix)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX (No Changes)
+  # 🐧 LINUX (Sorted)
   # ==================================================
   linux-lite:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -50,7 +50,7 @@ jobs:
         run: timeout 21000s bash -c "while true; do sleep 300; done" || true
 
   # ==================================================
-  # 🪟 WINDOWS (Systematic & Clean Instructions)
+  # 🪟 WINDOWS (Syntax Fixed)
   # ==================================================
   windows-lite:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -86,7 +86,7 @@ jobs:
           echo ==================================================
           echo.
 
-          echo [1/4] Configuring Dark Mode, Timezone (India) & Format...
+          echo [1/4] Configuring Dark Mode, Timezone (India) and Format...
           powershell -Command "Set-TimeZone -Id 'India Standard Time'; New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name AppsUseLightTheme -Value 0 -Type Dword -Force; New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name SystemUsesLightTheme -Value 0 -Type Dword -Force; Set-ItemProperty -Path 'HKCU:\Control Panel\International' -Name sShortTime -Value 'h:mm tt'"
 
           echo [2/4] Stopping Heavy Services (Speed Boost)...
@@ -104,10 +104,10 @@ jobs:
           echo ==================================================
           echo.
           echo 1. Connection abhi DISCONNECT hoga (Ye Normal hai).
-          echo 2. Is link par wapas jao: https://remotedesktop.google.com/access
-          echo 3. Wahan 'LOKENDRA-WINDOWS' par wapas click karo.
+          echo 2. Wapas Jao: https://remotedesktop.google.com/access
+          echo 3. LOKENDRA-WINDOWS par wapas click karo.
           echo.
-          echo      >>> AUDIO & DARK MODE WILL BE READY <<<
+          echo      >>> AUDIO AND DARK MODE WILL BE READY <<<
           echo ==================================================
           timeout /t 8
 
