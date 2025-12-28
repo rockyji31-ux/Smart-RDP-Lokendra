@@ -1,4 +1,4 @@
-name: Ultimate RDP
+name: Ultimate RDP (Real Dark Theme)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX (Sorted)
+  # 🐧 LINUX (No Changes)
   # ==================================================
   linux-lite:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -50,7 +50,7 @@ jobs:
         run: timeout 21000s bash -c "while true; do sleep 300; done" || true
 
   # ==================================================
-  # 🪟 WINDOWS (All Dark Mode Features Added)
+  # 🪟 WINDOWS (Theme + Audio + Speed)
   # ==================================================
   windows-lite:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -82,19 +82,20 @@ jobs:
           color 0B
           cls
           echo ==================================================
-          echo      LOKENDRA RDP: ULTIMATE SETUP
+          echo      LOKENDRA RDP: ULTIMATE DARK MODE
           echo ==================================================
           echo.
 
-          echo [1/5] Applying ULTIMATE DARK MODE (Apps + System + Edge + Search)...
+          echo [1/5] Applying "Windows (dark)" Theme & Registry...
           
-          :: 1. Turn on Dark Mode for Windows Apps & System
+          :: 1. Apply the Official Dark Theme File (Changes Wallpaper + Colors)
+          powershell -Command "Start-Process 'C:\Windows\Resources\Themes\dark.theme'; Start-Sleep -Seconds 3; Stop-Process -Name SystemSettings -Force -ErrorAction SilentlyContinue"
+
+          :: 2. Force Registry to Dark (Backup)
           powershell -Command "New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name AppsUseLightTheme -Value 0 -Type Dword -Force; New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name SystemUsesLightTheme -Value 0 -Type Dword -Force"
-          
-          :: 2. Force Dark Mode for Edge & Chrome
+
+          :: 3. Force Edge/Chrome & Search Bar to Dark
           reg add "HKCU\Software\Policies\Microsoft\Edge" /v "PreferredColorScheme" /t REG_DWORD /d 2 /f >nul 2>&1
-          
-          :: 3. Make Search Bar Dark
           reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "SearchboxBackgroundMode" /t REG_DWORD /d 1 /f >nul 2>&1
 
           echo [2/5] Setting Timezone (India) and Format...
@@ -106,7 +107,7 @@ jobs:
           echo [4/5] Installing Audio Driver (C:\VB)...
           powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $url = 'https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip'; $dest = 'C:\VB.zip'; Invoke-WebRequest -Uri $url -OutFile $dest; Expand-Archive $dest -Dest 'C:\VB' -Force; Start-Process -FilePath 'C:\VB\VBCABLE_Setup_x64.exe' -ArgumentList '-i -h' -Verb RunAs -Wait"
 
-          echo [5/5] Refreshing Explorer to Apply Dark Mode...
+          echo [5/5] Refreshing Explorer...
           powershell -Command "Get-Process explorer | Stop-Process"
 
           echo.
@@ -118,7 +119,7 @@ jobs:
           echo 2. Wapas Jao: https://remotedesktop.google.com/access
           echo 3. LOKENDRA-WINDOWS par wapas click karo.
           echo.
-          echo      >>> FULL DARK MODE & AUDIO READY <<<
+          echo      >>> FULL DARK THEME + AUDIO READY <<<
           echo ==================================================
           timeout /t 8
 
@@ -139,7 +140,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n\n🌑 *Step:* Desktop par `Fix_All.bat` chalao (Full Dark Mode)."}' \
+          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n\n🌑 *Step:* Desktop par `Fix_All.bat` chalao (Ab Wallpaper bhi Dark hoga)."}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 💤 Keep Alive
