@@ -1,4 +1,4 @@
-name: Ultimate RDP (Ghost Mode + GUI Cleaner)
+name: Ultimate RDP (GUI Cleaner + Hider)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX JOB (Stable)
+  # 🐧 LINUX JOB (No Changes - Working Perfect)
   # ==================================================
   linux-smart:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -56,7 +56,7 @@ jobs:
           timeout 21000s bash -c "while true; do sleep 300; done" || true
 
   # ==================================================
-  # 🪟 WINDOWS JOB (Ghost Mode & GUI Cleaner)
+  # 🪟 WINDOWS JOB (New Features Added)
   # ==================================================
   windows-smart:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -68,7 +68,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *Windows Setup Started...*\nMode: Ghost Audio + GUI Cleaner\nWait: ~2 min"}' \
+          -d '{"message": "🪟 *Windows Setup Started...*\nMode: GUI Cleaner + Window Hider\nWait: ~2 min"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 🔓 1. Enable Audio Registry
@@ -82,12 +82,13 @@ jobs:
           Invoke-WebRequest -Uri "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi" -OutFile $InstallerPath
           Start-Process -FilePath msiexec.exe -ArgumentList "/i $InstallerPath /qn /norestart" -Wait
 
-      - name: 🪄 3. Create Hidden Audio Fix
+      - name: 🪄 3. Setup Audio Scripts (Startup & Desktop)
         shell: powershell
         run: |
-          # 1. Main Logic Script (Hidden in C:)
+          # 1. Main Logic Script (Hidden)
           $AudioScriptPath = "C:\AudioFix.ps1"
           $AudioContent = @'
+          Write-Host "Fixing Audio..."
           if (-not (Test-Path "$env:TEMP\VBCABLE")) {
               $url = "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip"
               Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\VBCABLE.zip"
@@ -101,70 +102,58 @@ jobs:
           '@
           Set-Content -Path $AudioScriptPath -Value $AudioContent
 
-          # 2. VBS Ghost Launcher (Runs logic invisibly)
-          $StartupPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\SilentAudio.vbs"
-          $VBSContent = 'CreateObject("Wscript.Shell").Run "powershell -NoProfile -ExecutionPolicy Bypass -File C:\AudioFix.ps1", 0, False'
-          Set-Content -Path $StartupPath -Value $VBSContent
+          # 2. Trigger in Startup (Auto Run)
+          $StartupPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\StartAudio.bat"
+          $BatContent = 'powershell -ExecutionPolicy Bypass -File "C:\AudioFix.ps1"'
+          Set-Content -Path $StartupPath -Value $BatContent
+          
+          # 3. Manual Backup on Desktop (As Requested)
+          $DesktopBatPath = "$env:USERPROFILE\Desktop\Fix_Audio.bat"
+          Set-Content -Path $DesktopBatPath -Value $BatContent
 
-      - name: 🧹 4. Create "GUI Cleaner" on Desktop
+      - name: 🧹 4. Create "GUI Cleaner" & "Window Hider"
         shell: powershell
         run: |
+          # --- A. GUI CLEANER SCRIPT ---
           $CleanerPath = "$env:USERPROFILE\Desktop\Super_Cleaner.ps1"
           $CleanerContent = @'
           Add-Type -AssemblyName System.Windows.Forms
           Add-Type -AssemblyName System.Drawing
-
           $form = New-Object System.Windows.Forms.Form
-          $form.Text = "Junk Cleaner"
-          $form.Size = New-Object System.Drawing.Size(300,350)
-          $form.StartPosition = "CenterScreen"
-
-          $chkVS = New-Object System.Windows.Forms.CheckBox
-          $chkVS.Text = "Visual Studio (Heavy)"
-          $chkVS.Location = New-Object System.Drawing.Point(20,20)
-          $chkVS.AutoSize = $true
-          $form.Controls.Add($chkVS)
-
-          $chkSQL = New-Object System.Windows.Forms.CheckBox
-          $chkSQL.Text = "SQL Server (Database)"
-          $chkSQL.Location = New-Object System.Drawing.Point(20,50)
-          $chkSQL.AutoSize = $true
-          $form.Controls.Add($chkSQL)
-
-          $chkAnd = New-Object System.Windows.Forms.CheckBox
-          $chkAnd.Text = "Android SDK"
-          $chkAnd.Location = New-Object System.Drawing.Point(20,80)
-          $chkAnd.AutoSize = $true
-          $form.Controls.Add($chkAnd)
+          $form.Text = "Junk Cleaner"; $form.Size = New-Object System.Drawing.Size(300,350); $form.StartPosition = "CenterScreen"
           
-          $btn = New-Object System.Windows.Forms.Button
-          $btn.Text = "CLEAN SELECTED"
-          $btn.Location = New-Object System.Drawing.Point(20,200)
-          $btn.Size = New-Object System.Drawing.Size(200,40)
+          $lbl = New-Object System.Windows.Forms.Label; $lbl.Text = "Select Junk to Delete:"; $lbl.Location = "20,10"; $lbl.AutoSize = $true; $form.Controls.Add($lbl)
+          
+          $chkVS = New-Object System.Windows.Forms.CheckBox; $chkVS.Text = "Visual Studio (Heavy)"; $chkVS.Location = "20,40"; $chkVS.AutoSize=$true; $form.Controls.Add($chkVS)
+          $chkSQL = New-Object System.Windows.Forms.CheckBox; $chkSQL.Text = "SQL Server (Database)"; $chkSQL.Location = "20,70"; $chkSQL.AutoSize=$true; $form.Controls.Add($chkSQL)
+          $chkAnd = New-Object System.Windows.Forms.CheckBox; $chkAnd.Text = "Android SDK"; $chkAnd.Location = "20,100"; $chkAnd.AutoSize=$true; $form.Controls.Add($chkAnd)
+          $chkNode = New-Object System.Windows.Forms.CheckBox; $chkNode.Text = "NodeJS & Python"; $chkNode.Location = "20,130"; $chkNode.AutoSize=$true; $form.Controls.Add($chkNode)
+          
+          $btn = New-Object System.Windows.Forms.Button; $btn.Text = "CLEAN SELECTED"; $btn.Location = "20,200"; $btn.Size = "200,40"
           $btn.Add_Click({
-              $btn.Text = "Cleaning..."
-              $btn.Enabled = $false
-              
-              if ($chkSQL.Checked) { 
-                  Get-Service *SQL* | Stop-Service -Force -ErrorAction SilentlyContinue
-                  Remove-Item "C:\Program Files\Microsoft SQL Server" -Recurse -Force -ErrorAction SilentlyContinue
-              }
-              if ($chkVS.Checked) { 
-                  Remove-Item "C:\Program Files\Microsoft Visual Studio" -Recurse -Force -ErrorAction SilentlyContinue
-                  Remove-Item "C:\Program Files (x86)\Microsoft Visual Studio" -Recurse -Force -ErrorAction SilentlyContinue
-              }
-              if ($chkAnd.Checked) { 
-                  Remove-Item "C:\Android" -Recurse -Force -ErrorAction SilentlyContinue
-              }
-              
-              [System.Windows.Forms.MessageBox]::Show("Cleanup Complete! RAM Freed.")
+              $btn.Text = "Cleaning..."; $btn.Enabled = $false
+              if ($chkSQL.Checked) { Get-Service *SQL* | Stop-Service -Force -ErrorAction SilentlyContinue; Remove-Item "C:\Program Files\Microsoft SQL Server" -Recurse -Force -ErrorAction SilentlyContinue }
+              if ($chkVS.Checked) { Remove-Item "C:\Program Files\Microsoft Visual Studio" -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item "C:\Program Files (x86)\Microsoft Visual Studio" -Recurse -Force -ErrorAction SilentlyContinue }
+              if ($chkAnd.Checked) { Remove-Item "C:\Android" -Recurse -Force -ErrorAction SilentlyContinue }
+              if ($chkNode.Checked) { Remove-Item "C:\Program Files\nodejs" -Recurse -Force -ErrorAction SilentlyContinue }
+              [System.Windows.Forms.MessageBox]::Show("Cleanup Done!")
               $form.Close()
           })
           $form.Controls.Add($btn)
-
           $form.ShowDialog()
           '@
           Set-Content -Path $CleanerPath -Value $CleanerContent
+
+          # --- B. WINDOW HIDER SCRIPT (Magic) ---
+          $HiderPath = "$env:USERPROFILE\Desktop\Hide_Console_Window.ps1"
+          $HiderContent = @'
+          $t = '[DllImport("user32.dll")] public static extern bool ShowWindow(int handle, int state);'
+          $type = Add-Type -MemberDefinition $t -Name Win32ShowWindow -Namespace Win32 -PassThru
+          $hwnd = (Get-Process -Name "Runner.Listener").MainWindowHandle
+          if ($hwnd) { $type::ShowWindow($hwnd, 0) } # 0 = Hide, 6 = Minimize
+          Write-Host "Runner Window Hidden! RDP is safe."
+          '@
+          Set-Content -Path $HiderPath -Value $HiderContent
 
       - name: 🚀 5. Start Windows RDP
         shell: powershell
@@ -180,7 +169,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *LOKENDRA-WINDOWS Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\n\n1. *Audio:* Silent Auto-Fix (No Window).\n2. *Cleaner:* Desktop par `Super_Cleaner` file chalao."}' \
+          -d '{"message": "🪟 *LOKENDRA-WINDOWS Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\n\n🔹 *Desktop Tools:*\n1. `Super_Cleaner` (Right Click > Run with PowerShell)\n2. `Hide_Console_Window` (To hide black window)\n3. `Fix_Audio` (Manual Audio Backup)"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 💤 Keep Alive
