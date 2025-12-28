@@ -1,4 +1,4 @@
-name: Ultra Short RDP (Timezone Fixed)
+name: Ultimate RDP (Dark Mode + Fixes)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX (No Changes - Already Perfect)
+  # 🐧 LINUX (No Changes - Best Version)
   # ==================================================
   linux-lite:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -21,7 +21,6 @@ jobs:
           curl -X POST -H "Content-Type: application/json" \
           -d '{"message": "🐧 *Linux Starting...*\nWait: 45s"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
-
       - name: ⚙️ Install Essentials
         run: |
           sudo apt-get update
@@ -30,7 +29,6 @@ jobs:
           sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg -i chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
-
       - name: 🎧 Config Audio
         run: |
           sudo usermod -a -G audio,pulse,pulse-access $USER
@@ -39,23 +37,20 @@ jobs:
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
           sudo apt-get install -y gnome-screensaver
           gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
-
       - name: 🚀 Start RDP
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
         run: eval "$RAW_CODE --pin=14789147 --name=LOKENDRA-LINUX"
-
       - name: ✅ Notify Success
         run: |
           curl -X POST -H "Content-Type: application/json" \
           -d '{"message": "🐧 *Linux Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
-
       - name: 💤 Keep Alive
         run: timeout 21000s bash -c "while true; do sleep 300; done" || true
 
   # ==================================================
-  # 🪟 WINDOWS (Timezone + Audio + Speed)
+  # 🪟 WINDOWS (Dark Mode + Audio Fix)
   # ==================================================
   windows-lite:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -83,25 +78,36 @@ jobs:
           $ScriptPath = "$env:USERPROFILE\Desktop\Fix_All.bat"
           $Content = @'
           @echo off
-          echo "🚀 Configuring System (Time, Audio, Speed)..."
-          
-          :: 1. Set Timezone to India (Asia/Kolkata)
-          powershell -Command "Set-TimeZone -Id 'India Standard Time'"
-          
-          :: 2. Set Time Format to 12-Hour (AM/PM) and Refresh Taskbar
-          powershell -Command "Set-ItemProperty -Path 'HKCU:\Control Panel\International' -Name sShortTime -Value 'h:mm tt'; Stop-Process -Name explorer -Force"
-          
-          :: 3. Speed Up (Stop Junk Services)
+          Title Lokendra RDP Fixer
+          color 0B
+          echo "=============================================="
+          echo "🚀 CONFIGURING DARK MODE & AUDIO..."
+          echo "=============================================="
+          echo.
+
+          echo "1. Enabling Dark Mode (Eyes Protection)..."
+          powershell -Command "New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name AppsUseLightTheme -Value 0 -Type Dword -Force"
+          powershell -Command "New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name SystemUsesLightTheme -Value 0 -Type Dword -Force"
+
+          echo "2. Setting Timezone (India) & Format..."
+          powershell -Command "Set-TimeZone -Id 'India Standard Time'; Set-ItemProperty -Path 'HKCU:\Control Panel\International' -Name sShortTime -Value 'h:mm tt'; Get-Process explorer | Stop-Process"
+
+          echo "3. Stopping Junk (Speed Boost)..."
           powershell -Command "Stop-Service 'SysMain', 'wuauserv' -Force -ErrorAction SilentlyContinue"
-          
-          :: 4. Install Audio Driver
-          powershell -Command "if (!(Test-Path $env:TEMP\VB.zip)) { Invoke-WebRequest https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip -OutFile $env:TEMP\VB.zip; Expand-Archive $env:TEMP\VB.zip -Dest $env:TEMP\VB -Force; Start-Process $env:TEMP\VB\VBCABLE_Setup_x64.exe -Args '-i -h' -Verb RunAs -Wait }"
-          
-          :: 5. Restart Audio Services
+
+          echo "4. Installing Audio Driver..."
+          powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $url = 'https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip'; $dest = '$env:TEMP\VB.zip'; Invoke-WebRequest -Uri $url -OutFile $dest; Expand-Archive $dest -Dest $env:TEMP\VB -Force"
+          powershell -Command "Start-Process -FilePath '$env:TEMP\VB\VBCABLE_Setup_x64.exe' -ArgumentList '-i -h' -Verb RunAs -Wait"
+
+          echo.
+          echo "=============================================="
+          echo "⚠️  DISCONNECTING TO APPLY AUDIO FIX..."
+          echo "⚠️  Reconnect now for Sound + Dark Mode."
+          echo "=============================================="
+          timeout /t 4
+
+          echo "5. Applying Final Fix..."
           powershell -Command "Stop-Service Audiosrv -Force; Start-Service Audiosrv; Stop-Service chromoting -Force; Start-Service chromoting"
-          
-          echo "✅ All Done! Enjoy."
-          pause
           '@
           Set-Content -Path $ScriptPath -Value $Content
 
@@ -117,7 +123,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n⚠️ Desktop par `Fix_All.bat` chalana. Time/Audio sab set ho jayega."}' \
+          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n\n🌑 *Setup:* Login karke `Fix_All.bat` chalao (Dark Mode Included)."}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 💤 Keep Alive
