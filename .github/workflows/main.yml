@@ -1,4 +1,4 @@
-name: Smart RDP (Auto-Notify System)
+name: Ultimate Smart RDP (Auto-Notify + Named)
 
 on:
   workflow_dispatch:
@@ -14,36 +14,34 @@ jobs:
   linux-smart:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 360 # Hard limit 6 Hours
     
     steps:
       - name: 🔔 Notify Start
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🐧 *Linux Setup Started...*\nWait 40-50 seconds."}' \
-          ${{ secrets.N8N_WEBHOOK_URL }}
+          -d '{"message": "🐧 *Linux Setup Started...*\nWaiting for configuration (approx 40s)."}' \
+          ${{ secrets.N8N_WEBHOOK }} || true
 
-      - name: 🧹 1. Smart Cleanup (Chrome Safe)
+      - name: 🧹 1. Smart Cleanup
         run: |
           sudo apt-get remove -y firefox microsoft-edge-stable || true
           sudo apt-get clean
 
-      - name: ⚙️ 2. Install Desktop, Chrome & Audio
+      - name: ⚙️ 2. Install Desktop & Audio
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils
           sudo apt-get install -y pulseaudio pavucontrol pulseaudio-utils xfce4-pulseaudio-plugin libfuse2
-          # Chrome Install
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
 
-      - name: 🎧 3. Auto-Audio Logic
+      - name: 🎧 3. Auto-Audio Config
         run: |
           sudo usermod -a -G audio,pulse,pulse-access $USER
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
           
-          # Internal Session Audio Fix
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
           echo "pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description='Virtual_Output'" >> ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
@@ -60,17 +58,24 @@ jobs:
         run: |
           curl -X POST -H "Content-Type: application/json" \
           -d '{"message": "🐧 *LOKENDRA-LINUX Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\n🔊 Sound: Auto-Enabled"}' \
-          ${{ secrets.N8N_WEBHOOK_URL }}
+          ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: ❌ Notify Failure
         if: failure()
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "❌ *Linux Setup Failed!* Check GitHub logs."}' \
-          ${{ secrets.N8N_WEBHOOK_URL }}
+          -d '{"message": "❌ *Linux Setup Failed!* Check code/logs."}' \
+          ${{ secrets.N8N_WEBHOOK }} || true
 
-      - name: 💤 Keep Alive
-        run: while true; do sleep 300; done
+      - name: 💤 Keep Alive (With Stop Alert)
+        run: |
+          # 21000 seconds = 5 hours 50 mins. Uske baad alert bhejega.
+          timeout 21000s bash -c "while true; do sleep 300; done" || true
+          
+          # Send Stop Alert
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{"message": "🛑 *Linux Session Expired!*\n6 Hours complete. RDP Stopping now."}' \
+          ${{ secrets.N8N_WEBHOOK }} || true
 
   # ==================================================
   # 🪟 WINDOWS JOB (LOKENDRA-WINDOWS)
@@ -84,46 +89,37 @@ jobs:
       - name: 🔔 Notify Start
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *Windows Setup Started...*\nWait 2 minutes."}' \
-          ${{ secrets.N8N_WEBHOOK_URL }}
+          -d '{"message": "🪟 *Windows Setup Started...*\nWaiting for configuration (approx 2 min)."}' \
+          ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 🔓 1. Enable Audio Registry
         run: |
           reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v "fDisableAudioCapture" /t REG_DWORD /d 0 /f
           reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows NT\Terminal Services" /v "fDisableAudioPlayback" /t REG_DWORD /d 0 /f
 
-      - name: 📥 2. Install CRD Host Only
+      - name: 📥 2. Install CRD Host
         run: |
           $InstallerPath = "$env:TEMP\chromeremotedesktophost.msi"
           Invoke-WebRequest -Uri "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi" -OutFile $InstallerPath
           Start-Process -FilePath msiexec.exe -ArgumentList "/i $InstallerPath /qn /norestart" -Wait
 
-      - name: 🤖 3. Inject Auto-Run Script (Startup Folder)
+      - name: 🤖 3. Inject Auto-Run Script
         shell: powershell
         run: |
           $StartupPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
           $ScriptPath = "$StartupPath\AutoFixAudio.ps1"
-          
           $Content = @'
-          Write-Host "🚀 Auto-Fixing Audio for Lokendra..." -ForegroundColor Green
+          Write-Host "🚀 Auto-Fixing Audio..." -ForegroundColor Green
           if (-not (Test-Path "$env:TEMP\VBCABLE")) {
               $url = "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip"
-              $zipPath = "$env:TEMP\VBCABLE.zip"
-              $extractPath = "$env:TEMP\VBCABLE"
-              Invoke-WebRequest -Uri $url -OutFile $zipPath
-              Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
-              Start-Process -FilePath "$extractPath\VBCABLE_Setup_x64.exe" -ArgumentList "-i -h" -Verb RunAs -Wait
+              Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\VBCABLE.zip"
+              Expand-Archive -Path "$env:TEMP\VBCABLE.zip" -DestinationPath "$env:TEMP\VBCABLE" -Force
+              Start-Process -FilePath "$env:TEMP\VBCABLE\VBCABLE_Setup_x64.exe" -ArgumentList "-i -h" -Verb RunAs -Wait
           }
-          Write-Host "🔄 Restarting Services..."
           Stop-Service Audiosrv -Force -ErrorAction SilentlyContinue
-          Stop-Service AudioEndpointBuilder -Force -ErrorAction SilentlyContinue
-          Start-Sleep -Seconds 2
-          Start-Service AudioEndpointBuilder
           Start-Service Audiosrv
-          Stop-Service -Name chromoting -Force -ErrorAction SilentlyContinue
-          Start-Service -Name chromoting
-          Write-Host "✅ Audio Ready!"
-          Start-Sleep -Seconds 3
+          Stop-Service chromoting -Force -ErrorAction SilentlyContinue
+          Start-Service chromoting
           '@
           Set-Content -Path $ScriptPath -Value $Content
 
@@ -140,15 +136,21 @@ jobs:
       - name: ✅ Notify Success
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *LOKENDRA-WINDOWS Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\n💡 *Note:* Login karte hi Audio Script chalegi, 10 sec wait karna."}' \
-          ${{ secrets.N8N_WEBHOOK_URL }}
+          -d '{"message": "🪟 *LOKENDRA-WINDOWS Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\n💡 *Note:* Audio auto-start script will run on login."}' \
+          ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: ❌ Notify Failure
         if: failure()
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "❌ *Windows Setup Failed!* Check GitHub logs."}' \
-          ${{ secrets.N8N_WEBHOOK_URL }}
+          -d '{"message": "❌ *Windows Setup Failed!* Check logs."}' \
+          ${{ secrets.N8N_WEBHOOK }} || true
 
-      - name: 💤 Keep Alive
-        run: while ($true) { Start-Sleep -Seconds 300 }
+      - name: 💤 Keep Alive (With Stop Alert)
+        shell: powershell
+        run: |
+          # Sleep for 21000 seconds (approx 5h 50m)
+          Start-Sleep -Seconds 21000
+          
+          # Send Stop Alert
+          Invoke-RestMethod -Uri "${{ secrets.N8N_WEBHOOK }}" -Method Post -ContentType "application/json" -Body '{"message": "🛑 *Windows Session Expired!*\n6 Hours complete. Stopping."}'
