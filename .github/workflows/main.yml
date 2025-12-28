@@ -1,4 +1,4 @@
-name: Ultimate RDP (Dark Mode + Fixes)
+name: Ultimate RDP (Error Free Fix)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX (No Changes - Best Version)
+  # 🐧 LINUX (No Changes - Working Perfect)
   # ==================================================
   linux-lite:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -44,13 +44,13 @@ jobs:
       - name: ✅ Notify Success
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🐧 *Linux Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`"}' \
+          -d '{"message": "🐧 *LOKENDRA-LINUX Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
       - name: 💤 Keep Alive
         run: timeout 21000s bash -c "while true; do sleep 300; done" || true
 
   # ==================================================
-  # 🪟 WINDOWS (Dark Mode + Audio Fix)
+  # 🪟 WINDOWS (Path Error Fixed)
   # ==================================================
   windows-lite:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -95,9 +95,12 @@ jobs:
           echo "3. Stopping Junk (Speed Boost)..."
           powershell -Command "Stop-Service 'SysMain', 'wuauserv' -Force -ErrorAction SilentlyContinue"
 
-          echo "4. Installing Audio Driver..."
-          powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $url = 'https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip'; $dest = '$env:TEMP\VB.zip'; Invoke-WebRequest -Uri $url -OutFile $dest; Expand-Archive $dest -Dest $env:TEMP\VB -Force"
-          powershell -Command "Start-Process -FilePath '$env:TEMP\VB\VBCABLE_Setup_x64.exe' -ArgumentList '-i -h' -Verb RunAs -Wait"
+          echo "4. Downloading Audio Driver (Fixed Path)..."
+          :: Using C:\ directly to avoid Variable Expansion Errors
+          powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $url = 'https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip'; $dest = 'C:\VB.zip'; Invoke-WebRequest -Uri $url -OutFile $dest; Expand-Archive $dest -Dest 'C:\VB' -Force"
+          
+          echo "5. Installing Driver..."
+          powershell -Command "Start-Process -FilePath 'C:\VB\VBCABLE_Setup_x64.exe' -ArgumentList '-i -h' -Verb RunAs -Wait"
 
           echo.
           echo "=============================================="
@@ -106,7 +109,7 @@ jobs:
           echo "=============================================="
           timeout /t 4
 
-          echo "5. Applying Final Fix..."
+          echo "6. Restarting Services..."
           powershell -Command "Stop-Service Audiosrv -Force; Start-Service Audiosrv; Stop-Service chromoting -Force; Start-Service chromoting"
           '@
           Set-Content -Path $ScriptPath -Value $Content
@@ -123,7 +126,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n\n🌑 *Setup:* Login karke `Fix_All.bat` chalao (Dark Mode Included)."}' \
+          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n\n🌑 *Step:* Login karke `Fix_All.bat` chalao (Ab Error nahi aayega)."}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 💤 Keep Alive
