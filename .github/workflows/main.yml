@@ -1,4 +1,4 @@
-name: Ultimate RDP (Syntax Fixed)
+name: Ultimate RDP (Real Dark Mode Fix)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX (No Changes)
+  # 🐧 LINUX (Real Dark Mode Logic Added)
   # ==================================================
   linux-lite:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
@@ -19,38 +19,64 @@ jobs:
       - name: 🔔 Notify Start
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🐧 *Linux Starting...*\nWait: 45s"}' \
+          -d '{"message": "🐧 *Linux Starting...*\nMode: Real Dark Theme\nWait: 45s"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
-      - name: ⚙️ Install Essentials
+
+      - name: ⚙️ Install Essentials & Dark Theme
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils pulseaudio pavucontrol xfce4-pulseaudio-plugin
+          # Added 'arc-theme'
+          sudo apt-get install -y --no-install-recommends xfce4 xfce4-goodies xorg dbus-x11 x11-xserver-utils pulseaudio pavucontrol xfce4-pulseaudio-plugin arc-theme
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg -i chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
+
+      - name: 🌑 Force Dark Mode (Autostart)
+        run: |
+          # 1. Create Autostart Directory
+          mkdir -p ~/.config/autostart
+          
+          # 2. Create a Launcher that runs IMMEDIATELY on login
+          # This forces XFCE settings to switch to Arc-Dark
+          cat <<EOF > ~/.config/autostart/dark-theme.desktop
+          [Desktop Entry]
+          Type=Application
+          Name=Force Dark Mode
+          Exec=sh -c "xfconf-query -c xsettings -p /Net/ThemeName -s 'Arc-Dark' --create -t string; xfconf-query -c xfwm4 -p /general/theme -s 'Arc-Dark' --create -t string"
+          StartupNotify=false
+          Terminal=false
+          Hidden=false
+          EOF
+
       - name: 🎧 Config Audio
         run: |
           sudo usermod -a -G audio,pulse,pulse-access $USER
+          
+          # Standard Audio Setup
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
           echo "pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description='Virtual_Output'" >> ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
+          
           sudo apt-get install -y gnome-screensaver
           gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
+
       - name: 🚀 Start RDP
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
         run: eval "$RAW_CODE --pin=14789147 --name=LOKENDRA-LINUX"
+
       - name: ✅ Notify Success
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🐧 *LOKENDRA-LINUX Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`"}' \
+          -d '{"message": "🐧 *LOKENDRA-LINUX Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n🖤 Theme: Arc-Dark (Auto-Applied)"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
+
       - name: 💤 Keep Alive
         run: timeout 21000s bash -c "while true; do sleep 300; done" || true
 
   # ==================================================
-  # 🪟 WINDOWS (Syntax Fixed & Dark Theme)
+  # 🪟 WINDOWS (Already Perfect)
   # ==================================================
   windows-lite:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -86,16 +112,15 @@ jobs:
           echo ==================================================
           echo.
 
-          :: "and" use kiya hai taaki script crash na ho
           echo [1/5] Applying "Windows (dark)" Theme and Registry...
           
-          :: 1. Apply the Official Dark Theme File (Changes Wallpaper + Colors)
+          :: Apply Official Dark Theme
           powershell -Command "Start-Process 'C:\Windows\Resources\Themes\dark.theme'; Start-Sleep -Seconds 3; Stop-Process -Name SystemSettings -Force -ErrorAction SilentlyContinue"
 
-          :: 2. Force Registry to Dark (Backup)
+          :: Force Registry Backup
           powershell -Command "New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name AppsUseLightTheme -Value 0 -Type Dword -Force; New-ItemProperty -Path HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize -Name SystemUsesLightTheme -Value 0 -Type Dword -Force"
 
-          :: 3. Force Edge/Chrome & Search Bar to Dark
+          :: Force Edge/Search Dark
           reg add "HKCU\Software\Policies\Microsoft\Edge" /v "PreferredColorScheme" /t REG_DWORD /d 2 /f >nul 2>&1
           reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "SearchboxBackgroundMode" /t REG_DWORD /d 1 /f >nul 2>&1
 
@@ -141,7 +166,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n\n🌑 *Step:* Desktop par `Fix_All.bat` chalao (Syntax Fixed)."}' \
+          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n\n🌑 *Step:* Desktop par `Fix_All.bat` chalao."}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 💤 Keep Alive
