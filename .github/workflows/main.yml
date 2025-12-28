@@ -1,4 +1,4 @@
-name: Ultimate RDP (Stable Final)
+name: Ultimate RDP (Ghost Mode + GUI Cleaner)
 
 on:
   workflow_dispatch:
@@ -9,25 +9,22 @@ on:
 
 jobs:
   # ==================================================
-  # 🐧 LINUX JOB (LOKENDRA-LINUX) - No Changes
+  # 🐧 LINUX JOB (Stable)
   # ==================================================
   linux-smart:
     if: contains(github.event.inputs.crd_code, 'DISPLAY=')
     runs-on: ubuntu-latest
     timeout-minutes: 360
-    
     steps:
       - name: 🔔 Notify Start
         run: |
           curl -X POST -H "Content-Type: application/json" \
           -d '{"message": "🐧 *Linux Setup Started...*\nName: LOKENDRA-LINUX\nWait: ~45s"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
-
       - name: 🧹 1. Smart Cleanup
         run: |
           sudo apt-get remove -y firefox microsoft-edge-stable || true
           sudo apt-get clean
-
       - name: ⚙️ 2. Install Desktop & Audio
         run: |
           sudo apt-get update
@@ -35,48 +32,31 @@ jobs:
           sudo apt-get install -y pulseaudio pavucontrol pulseaudio-utils xfce4-pulseaudio-plugin libfuse2
           wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
           sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt-get -f install -y
-
       - name: 🎧 3. Auto-Audio Config
         run: |
           sudo usermod -a -G audio,pulse,pulse-access $USER
           wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb
           sudo dpkg --install chrome-remote-desktop_current_amd64.deb || sudo apt-get -f install -y
-          
-          # Internal Session Audio Logic
           echo "pulseaudio --start --exit-idle-time=-1" > ~/.chrome-remote-desktop-session
           echo "pactl load-module module-null-sink sink_name=DummyOutput sink_properties=device.description='Virtual_Output'" >> ~/.chrome-remote-desktop-session
           echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" >> ~/.chrome-remote-desktop-session
-          
           sudo apt-get install -y gnome-screensaver
           gsettings set org.gnome.desktop.lockdown disable-lock-screen 'true'
-
       - name: 🚀 4. Start RDP
         env:
           RAW_CODE: ${{ github.event.inputs.crd_code }}
         run: eval "$RAW_CODE --pin=14789147 --name=LOKENDRA-LINUX"
-
       - name: ✅ Notify Success
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🐧 *LOKENDRA-LINUX Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\n🔊 Sound: Auto-Enabled"}' \
+          -d '{"message": "🐧 *LOKENDRA-LINUX Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
-
-      - name: ❌ Notify Failure
-        if: failure()
-        run: |
-          curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "❌ *Linux Setup Failed!* Check logs."}' \
-          ${{ secrets.N8N_WEBHOOK }} || true
-
       - name: 💤 Keep Alive
         run: |
           timeout 21000s bash -c "while true; do sleep 300; done" || true
-          curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🛑 *Linux Session Expired!*\n6 Hours complete."}' \
-          ${{ secrets.N8N_WEBHOOK }} || true
 
   # ==================================================
-  # 🪟 WINDOWS JOB (LOKENDRA-WINDOWS) - Fixed Path Names
+  # 🪟 WINDOWS JOB (Ghost Mode & GUI Cleaner)
   # ==================================================
   windows-smart:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -88,7 +68,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *Windows Setup Started...*\nName: LOKENDRA-WINDOWS\nWait: ~2 min"}' \
+          -d '{"message": "🪟 *Windows Setup Started...*\nMode: Ghost Audio + GUI Cleaner\nWait: ~2 min"}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 🔓 1. Enable Audio Registry
@@ -102,13 +82,12 @@ jobs:
           Invoke-WebRequest -Uri "https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi" -OutFile $InstallerPath
           Start-Process -FilePath msiexec.exe -ArgumentList "/i $InstallerPath /qn /norestart" -Wait
 
-      - name: 🪄 3. Create Audio Fix & Launcher
+      - name: 🪄 3. Create Hidden Audio Fix
         shell: powershell
         run: |
-          # 1. Create the Main PowerShell Script in C:\ (Hidden Safe Place)
+          # 1. Main Logic Script (Hidden in C:)
           $AudioScriptPath = "C:\AudioFix.ps1"
           $AudioContent = @'
-          Write-Host "Starting Audio Fix..."
           if (-not (Test-Path "$env:TEMP\VBCABLE")) {
               $url = "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip"
               Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\VBCABLE.zip"
@@ -119,35 +98,71 @@ jobs:
           Start-Service Audiosrv
           Stop-Service chromoting -Force -ErrorAction SilentlyContinue
           Start-Service chromoting
-          Write-Host "Audio Fixed!"
-          Start-Sleep -Seconds 5
           '@
           Set-Content -Path $AudioScriptPath -Value $AudioContent
 
-          # 2. Create "Launcher.bat" in Startup Folder
-          $StartupPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\StartAudio.bat"
-          $BatContent = 'powershell -ExecutionPolicy Bypass -File "C:\AudioFix.ps1"'
-          Set-Content -Path $StartupPath -Value $BatContent
-          
-          # 3. Create Desktop Backup Shortcut (REMOVED EMOJI TO PREVENT ERROR)
-          $DesktopBatPath = "$env:USERPROFILE\Desktop\Fix_Audio.bat"
-          Set-Content -Path $DesktopBatPath -Value $BatContent
+          # 2. VBS Ghost Launcher (Runs logic invisibly)
+          $StartupPath = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\SilentAudio.vbs"
+          $VBSContent = 'CreateObject("Wscript.Shell").Run "powershell -NoProfile -ExecutionPolicy Bypass -File C:\AudioFix.ps1", 0, False'
+          Set-Content -Path $StartupPath -Value $VBSContent
 
-      - name: 🧹 4. Create "Manual Cleaner" on Desktop
+      - name: 🧹 4. Create "GUI Cleaner" on Desktop
         shell: powershell
         run: |
-          # REMOVED EMOJI FROM FILENAME
-          $CleanerPath = "$env:USERPROFILE\Desktop\Clean_Junk.bat"
+          $CleanerPath = "$env:USERPROFILE\Desktop\Super_Cleaner.ps1"
           $CleanerContent = @'
-          @echo off
-          echo "Cleaning Heavy Junk..."
-          net stop MSSQL$SQLEXPRESS /y
-          net stop MSSQLSERVER /y
-          rmdir /s /q "C:\Program Files\Microsoft Visual Studio"
-          rmdir /s /q "C:\Program Files (x86)\Microsoft Visual Studio"
-          rmdir /s /q "C:\Android"
-          echo "Done."
-          pause
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+
+          $form = New-Object System.Windows.Forms.Form
+          $form.Text = "Junk Cleaner"
+          $form.Size = New-Object System.Drawing.Size(300,350)
+          $form.StartPosition = "CenterScreen"
+
+          $chkVS = New-Object System.Windows.Forms.CheckBox
+          $chkVS.Text = "Visual Studio (Heavy)"
+          $chkVS.Location = New-Object System.Drawing.Point(20,20)
+          $chkVS.AutoSize = $true
+          $form.Controls.Add($chkVS)
+
+          $chkSQL = New-Object System.Windows.Forms.CheckBox
+          $chkSQL.Text = "SQL Server (Database)"
+          $chkSQL.Location = New-Object System.Drawing.Point(20,50)
+          $chkSQL.AutoSize = $true
+          $form.Controls.Add($chkSQL)
+
+          $chkAnd = New-Object System.Windows.Forms.CheckBox
+          $chkAnd.Text = "Android SDK"
+          $chkAnd.Location = New-Object System.Drawing.Point(20,80)
+          $chkAnd.AutoSize = $true
+          $form.Controls.Add($chkAnd)
+          
+          $btn = New-Object System.Windows.Forms.Button
+          $btn.Text = "CLEAN SELECTED"
+          $btn.Location = New-Object System.Drawing.Point(20,200)
+          $btn.Size = New-Object System.Drawing.Size(200,40)
+          $btn.Add_Click({
+              $btn.Text = "Cleaning..."
+              $btn.Enabled = $false
+              
+              if ($chkSQL.Checked) { 
+                  Get-Service *SQL* | Stop-Service -Force -ErrorAction SilentlyContinue
+                  Remove-Item "C:\Program Files\Microsoft SQL Server" -Recurse -Force -ErrorAction SilentlyContinue
+              }
+              if ($chkVS.Checked) { 
+                  Remove-Item "C:\Program Files\Microsoft Visual Studio" -Recurse -Force -ErrorAction SilentlyContinue
+                  Remove-Item "C:\Program Files (x86)\Microsoft Visual Studio" -Recurse -Force -ErrorAction SilentlyContinue
+              }
+              if ($chkAnd.Checked) { 
+                  Remove-Item "C:\Android" -Recurse -Force -ErrorAction SilentlyContinue
+              }
+              
+              [System.Windows.Forms.MessageBox]::Show("Cleanup Complete! RAM Freed.")
+              $form.Close()
+          })
+          $form.Controls.Add($btn)
+
+          $form.ShowDialog()
           '@
           Set-Content -Path $CleanerPath -Value $CleanerContent
 
@@ -165,15 +180,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *LOKENDRA-WINDOWS Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\nAudio Script runs automatically on login."}' \
-          ${{ secrets.N8N_WEBHOOK }} || true
-
-      - name: ❌ Notify Failure
-        if: failure()
-        shell: bash
-        run: |
-          curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "❌ *Windows Setup Failed!* Check logs."}' \
+          -d '{"message": "🪟 *LOKENDRA-WINDOWS Ready!*\n\n🔗 [Connect Here](https://remotedesktop.google.com/access)\n🔑 PIN: `14789147`\n\n1. *Audio:* Silent Auto-Fix (No Window).\n2. *Cleaner:* Desktop par `Super_Cleaner` file chalao."}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 💤 Keep Alive
