@@ -1,4 +1,4 @@
-name: Ultimate RDP (Real Dark Theme)
+name: Ultimate RDP (Syntax Fixed)
 
 on:
   workflow_dispatch:
@@ -50,7 +50,7 @@ jobs:
         run: timeout 21000s bash -c "while true; do sleep 300; done" || true
 
   # ==================================================
-  # 🪟 WINDOWS (Theme + Audio + Speed)
+  # 🪟 WINDOWS (Syntax Fixed & Dark Theme)
   # ==================================================
   windows-lite:
     if: ${{ !contains(github.event.inputs.crd_code, 'DISPLAY=') }}
@@ -86,7 +86,8 @@ jobs:
           echo ==================================================
           echo.
 
-          echo [1/5] Applying "Windows (dark)" Theme & Registry...
+          :: "and" use kiya hai taaki script crash na ho
+          echo [1/5] Applying "Windows (dark)" Theme and Registry...
           
           :: 1. Apply the Official Dark Theme File (Changes Wallpaper + Colors)
           powershell -Command "Start-Process 'C:\Windows\Resources\Themes\dark.theme'; Start-Sleep -Seconds 3; Stop-Process -Name SystemSettings -Force -ErrorAction SilentlyContinue"
@@ -140,7 +141,7 @@ jobs:
         shell: bash
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n\n🌑 *Step:* Desktop par `Fix_All.bat` chalao (Ab Wallpaper bhi Dark hoga)."}' \
+          -d '{"message": "🪟 *Windows Ready!*\n🔗 https://remotedesktop.google.com/access\n🔑 PIN: `14789147`\n\n🌑 *Step:* Desktop par `Fix_All.bat` chalao (Syntax Fixed)."}' \
           ${{ secrets.N8N_WEBHOOK }} || true
 
       - name: 💤 Keep Alive
